@@ -14,7 +14,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
 
 - 创建数据需求项目
 - 自动生成项目批次号
-- 填写项目必要的属性（数据类型、使用目的、需求量、截止时间等）
+- 填写项目必要的属性（联合提出人、数据类型、使用目的、需求量、截止时间等）
 - 填写项目描述细节，富文本编辑器，图文编辑
 - Q&A编辑器，回答细节问题
 
@@ -30,7 +30,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
 ## 标注员
 
 - Q&A编辑器，提出问题
-- 工作量登记
+- 日常工作登记、工作量登记
 
 ## 所有用户
 
