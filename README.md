@@ -45,31 +45,48 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
 
 - project(项目)
     - id
-    - project_id
-    - partner（user）
-    - type
-    - labels(label)
-    - status(status)
-    - background
-    - total_demand
-    - total_describe
-    - dead_line
-    - requirements_document(document)
-    - collection_document(document)
-    - annotation_documnet(document)
-    - qa(qa)
-    - tasks(task)
+    - project_id 项目id
+    - project_name 项目名称
+    - partner（user）需求伙伴
+    - labels(label) 项目类型标签
+    - status(status)  项目状态
+    - background 项目背景
+    - total_demand 需求总量
+    - total_describe 需求数量描述
+    - dead_line 完成期限
+    - requirements_document(document) 需求详细说明文档
+    - collection_document(document) 采集方案文档
+    - annotation_document(document) 标注方案文档
+    - qa(qa) Q&A
+    - tasks(task) 任务列表
     
 - user(用户)
     - id
+    - name 姓名
+    - username 用户名
+    - phone 手机
+    - email 电子邮箱
+    - position 职位
+    - performance(performance) 绩效
+    - current_task(task) 当前任务
+    
+- label(项目标签)
+    - id
+    - project_id(project)
     - name
-    - username
-    - phone
-    - email
-    - position
-    - performance(performance)
-    - current_task(task)
+    
+- status(项目状态)
+    - id
+    - serial_number
+    - name
+    - project_id(project)
+    
+- document(文档)
     
 
-- 
+- task(任务)
+
+- qa(Q&A)
+
+- performance(绩效)
     
