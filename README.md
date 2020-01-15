@@ -40,6 +40,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
 
 - 项目看板
 - 工作手册
+- 文档可以导出pdf
 
 # 模型设计
 
@@ -59,6 +60,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - annotation_document(document) 标注方案文档
     - qa(qa) Q&A
     - tasks(task) 任务列表
+    - reviewer 审核员
     
 - user(用户)
     - id
@@ -71,22 +73,56 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - current_task(task) 当前任务
     
 - label(项目标签)
-    - id
-    - project_id(project)
-    - name
+    - id 
+    - project_id(project) 项目id
+    - name 标签名
     
 - status(项目状态)
-    - id
-    - serial_number
-    - name
-    - project_id(project)
+    - id 
+    - serial_number 看板序号
+    - name 状态名
+    - project_id(project) 项目id
     
 - document(文档)
-    
+    - id
+    - project_id(project) 项目id
+    - type 文档类型
+    - title 文档标题
+    - content 文档内容
+    - old_content 历史文档内容
+    - create_time 创建时间
+    - update_time 更新时间
+    - author(user) 作者
 
 - task(任务)
-
-- qa(Q&A)
-
-- performance(绩效)
+    - id
+    - project_id(project) 项目id
+    - create_time 创建时间
+    - task_name 任务名称
+    - task_link 任务链接
+    - assignee(user) 标注员
+    - begin_time 开始时间
+    - done_time 完成时间
+    - used_time 任务用时
+    - total_time 任务历时
+    - gross 任务总数
+    - quantity_available 实际总数
+    - status 状态
+    - number_of_reviews 审核次数
+    - reviewer(user) 审核员
+    - suggestion 修改建议
     
+- qa(Q&A)
+    - id
+    - document_id(document) 文档id
+    - question_content 问题内容
+    - q_babel 问题标签
+    - q_create_time 问题创建时间
+    - answer_content 答案内容
+    - a_create_time
+    
+- performance(绩效)
+    - id
+    - name(user) 用户名
+    - performance 绩效
+    - date 考评日期
