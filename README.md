@@ -119,7 +119,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - id
     - document_id(document) 文档id
     - question_content 问题内容
-    - q_babel 问题标签
+    - q_label 问题标签
     - q_create_time 问题创建时间
     - answer_content 答案内容
     - a_create_time
