@@ -11,6 +11,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
 - 后端管理
 - 拥有所有操作权限
 - 员工当前工作状态
+- 管理数据集
 
 ## 算法工程师
 
@@ -61,6 +62,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - qa(qa) Q&A
     - tasks(task) 任务列表
     - reviewer 审核员
+    - dataset(dataset) 产生数据集
     
 - user(用户)
     - id
@@ -103,6 +105,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - assignee(user) 标注员
     - begin_time 开始时间
     - done_time 完成时间
+    - time_label 时间标记
     - used_time 任务用时
     - total_time 任务历时
     - gross 任务总数
@@ -126,3 +129,11 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - name(user) 用户名
     - performance 绩效
     - date 考评日期
+
+-dataset(数据集)
+    - id
+    - project_id(project) 项目id
+    - name 数据集名称
+    - describe 描述
+    - quantity_details 数量详情
+    - path 存储路径
