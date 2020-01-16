@@ -130,7 +130,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - performance 绩效
     - date 考评日期
 
--dataset(数据集)
+- dataset(数据集)
     - id
     - project_id(project) 项目id
     - name 数据集名称
