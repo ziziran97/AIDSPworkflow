@@ -71,7 +71,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - phone 手机
     - email 电子邮箱
     - position 职位
-    - performance(performance) 绩效
+    - ~~performance(performance) 绩效~~
     - current_task(task) 当前任务
     
 - label(项目标签)
