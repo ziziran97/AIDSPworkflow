@@ -49,19 +49,22 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - id
     - project_id 项目id
     - project_name 项目名称
+    - founder 创建人
     - partner（user）需求伙伴
-    - labels(label) 项目类型标签
-    - status(status)  项目状态
+    - p_manager 项目管理人
+    - ~~labels(label) 项目类型标签~~
+    - status  项目状态
     - background 项目背景
     - total_demand 需求总量
     - total_describe 需求数量描述
-    - dead_line 完成期限
-    - requirements_document(document) 需求详细说明文档
-    - collection_document(document) 采集方案文档
-    - annotation_document(document) 标注方案文档
-    - qa(qa) Q&A
+    - deadline 完成期限
+    - documents(document) 文档
+    - ~~requirements_document(document) 需求详细说明文档~~
+    - ~~collection_document(document) 采集方案文档~~
+    - ~~annotation_document(document) 标注方案文档~~
+    - ~~qa(qa) Q&A~~
     - tasks(task) 任务列表
-    - reviewer 审核员
+    - ~~reviewer 审核员~~
     - dataset(dataset) 产生数据集
     
 - user(用户)
@@ -72,37 +75,38 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - email 电子邮箱
     - position 职位
     - ~~performance(performance) 绩效~~
-    - current_task(task) 当前任务
+    - current_task 当前任务
     
-- label(项目标签)
+<!--- - label(项目标签)
     - id 
     - project_id(project) 项目id
-    - name 标签名
+    - name 标签名-->
     
-- status(项目状态)
+ <!--- - status(项目状态)
     - id 
     - serial_number 看板序号
     - name 状态名
-    - project_id(project) 项目id
+    - project_id(project) 项目id -->
     
 - document(文档)
     - id
-    - project_id(project) 项目id
+    - project(project) 项目id
     - type 文档类型
     - title 文档标题
     - content 文档内容
     - old_content 历史文档内容
     - create_time 创建时间
     - update_time 更新时间
-    - author(user) 作者
+    - q_as(QA) QA问题
+    - author 作者
 
 - task(任务)
     - id
-    - project_id(project) 项目id
+    - project 项目id
     - create_time 创建时间
     - task_name 任务名称
     - task_link 任务链接
-    - assignee(user) 标注员
+    - assignee 标注员
     - begin_time 开始时间
     - done_time 完成时间
     - time_label 时间标记
@@ -112,12 +116,12 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - quantity_available 实际总数
     - status 状态
     - number_of_reviews 审核次数
-    - reviewer(user) 审核员
+    - reviewer 审核员
     - suggestion 修改建议
     
 - qa(Q&A)
     - id
-    - document_id(document) 文档id
+    - document(document) 文档id
     - question_content 问题内容
     - q_label 问题标签
     - q_create_time 问题创建时间
@@ -132,7 +136,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
 
 - dataset(数据集)
     - id
-    - project_id(project) 项目id
+    - project(project) 项目id
     - name 数据集名称
     - describe 描述
     - quantity_details 数量详情
