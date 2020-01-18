@@ -106,7 +106,6 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - create_time 创建时间
     - task_name 任务名称
     - task_link 任务链接
-    - assignee 标注员
     - begin_time 开始时间
     - done_time 完成时间
     - time_label 时间标记
@@ -116,6 +115,7 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - quantity_available 实际总数
     - status 状态
     - number_of_reviews 审核次数
+    - assignee 标注员
     - reviewer 审核员
     - suggestion 修改建议
     
