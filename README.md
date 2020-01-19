@@ -142,3 +142,6 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - quantity_details 数量详情
     - path 存储路径
     
+数据库表结构如下：
+
+![数据库表结构](images/database.png)
