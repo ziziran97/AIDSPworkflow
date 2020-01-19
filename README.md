@@ -77,10 +77,10 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - ~~performance(performance) 绩效~~
     - current_task 当前任务
     
-<!--- - label(项目标签)
+- label(项目标签)
     - id 
     - project_id(project) 项目id
-    - name 标签名-->
+    - name 标签名
     
  <!--- - status(项目状态)
     - id 
@@ -141,3 +141,4 @@ AIDSPworkflow（AI data sets production workflow manage system）即AI数据集�
     - describe 描述
     - quantity_details 数量详情
     - path 存储路径
+    
