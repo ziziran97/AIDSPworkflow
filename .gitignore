@@ -2,4 +2,6 @@
 .DS_Store
 src/venv
 __pycache__/
-src/db.sqlite3
+*.sqlite3
+*.pyc
+*.swp
