@@ -1,6 +1,6 @@
 .idea/*
 .DS_Store
-src/venv
+venv
 __pycache__/
 *.sqlite3
 *.pyc
