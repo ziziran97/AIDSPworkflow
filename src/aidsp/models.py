@@ -1,6 +1,8 @@
 from django.db import models
 
 # Create your models here.
+
+
 class Project(models.Model):
     id = models.AutoField(primary_key=True)
     project_id = models.CharField(max_length=50, verbose_name='项目id')
@@ -57,6 +59,21 @@ class Dataset(models.Model):
                                 to_field='project_id',
                                 verbose_name='所属项目',
                                 on_delete=models.DO_NOTHING)
+    name = models.CharField(max_length=20, verbose_name='数据集名称')
+    describe = models.CharField(max_length=200, verbose_name='数据集描述')
+    quantity_detial = models.CharField(max_length=200, verbose_name='数量详情')
+    path = models.CharField(verbose_name='存储路径')
+
+    class Mata:
+        verbose_name = verbose_name_plural = '数据集'
+
+
+class Label(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=50, verbose_name='标签名')
+
+    class Mata:
+        verbose_name = verbose_name_plural = '标签'
 
 
 class User(models.Model):
