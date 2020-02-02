@@ -25,6 +25,40 @@ class Project(models.Model):
         ordering = 'project_id'
 
 
+class Document(models.Model):
+    TYPE_REQUIREMENT = 0
+    TYPE_COLLECTION = 1
+    TYPE_LABELING = 2
+    TYPES = (
+        (TYPE_REQUIREMENT, '需求文档'),
+        (TYPE_COLLECTION, '采集文档'),
+        (TYPE_LABELING, '标注文档'),
+    )
+    id = models.AutoField(primary_key=True)
+    type = models.PositiveSmallIntegerField(choices=TYPES, verbose_name='文档类型')
+    title = models.CharField(max_length=50, verbose_name='标题')
+    content = models.TextField(verbose_name='文档内容')
+    old_content = models.TextField(verbose_name='文档内容历史版本')
+    create_time = models.DateTimeField(verbose_name='创建时间')
+    update_time = models.DateTimeField(verbose_name='更新时间')
+    author = models.ForeignKey(to='User',
+                               to_field='name',
+                               related_name='user',
+                               verbose_name='姓名',
+                               on_delete=models.DO_NOTHING)
+
+    class Mata:
+        verbose_name = verbose_name_plural = '文档'
+
+
+class Dataset(models.Model):
+    id = models.AutoField(primary_key=True)
+    project = models.ForeignKey(to='Project',
+                                to_field='project_id',
+                                verbose_name='所属项目',
+                                on_delete=models.DO_NOTHING)
+
+
 class User(models.Model):
     POSITION_ALG = 0
     POSITION_MAN = 1
@@ -59,9 +93,38 @@ class Performance(models.Model):
                              to_field='name',
                              related_name='user',
                              verbose_name='姓名',
-                             on_delete=models.SET_NULL)
+                             on_delete=models.DO_NOTHING)
     performance = models.CharField(max_length=10, verbose_name='绩效')
     date = models.DateField(verbose_name='打分日期')
+
+    class Mata:
+        verbose_name = verbose_name_plural = '员工绩效'
+
+
+class QA(models.Model):
+    id = models.AutoField(primary_key=True)
+    documents = models.ManyToManyField(to='Document', related_name='projects', verbose_name='文档')
+    question_content = models.TextField(verbose_name='问题内容', help_text='填写问题的内容，必须是markdown格式')
+    q_author = models.ForeignKey(to='User',
+                                 to_field='name',
+                                 verbose_name='问题作者',
+                                 on_delete=models.DO_NOTHING)
+    q_label = models.CharField(max_length=50, verbose_name='问题标签')
+    q_create_time = models.DateTimeField(verbose_name='问题创建时间')
+    answer_content = models.TextField(verbose_name='答案内容', help_text='填写答案的内容，必须是markdown格式')
+    a_author = models.ForeignKey(to='User',
+                                 to_field='name',
+                                 verbose_name='答案作者',
+                                 on_delete=models.DO_NOTHING)
+    a_create_time = models.DateTimeField(verbose_name='答案创建时间')
+    a_approval = models.ForeignKey(to='User',
+                                 to_field='name',
+                                 verbose_name='问题点赞人',
+                                 on_delete=models.DO_NOTHING)
+
+    class Mata:
+        verbose_name = verbose_name_plural = '问题与回答'
+
 
 class Task(models.Model):
     STATUS_NOT_BEGIN = 0
@@ -81,7 +144,7 @@ class Task(models.Model):
                                 to_field='project_id',
                                 related_name='project',
                                 verbose_name='所属项目',
-                                on_delete=models.SET_NULL)
+                                on_delete=models.DO_NOTHING)
     create_time = models.DateTimeField(verbose_name='创建时间')
     task_name = models.CharField(max_length=20, verbose_name='任务名称')
     task_link = models.URLField(verbose_name='任务链接')
@@ -98,12 +161,12 @@ class Task(models.Model):
                                  to_field='name',
                                  related_name='assignee',
                                  verbose_name='标注员',
-                                 on_delete=models.SET_NULL)
+                                 on_delete=models.DO_NOTHING)
     reviewer = models.ForeignKey(to='User',
                                  to_field='name',
                                  related_name='reviewer',
                                  verbose_name='审核员',
-                                 on_delete=models.SET_NULL)
+                                 on_delete=models.DO_NOTHING)
     # suggestions = models.TextField(verbose_name='修改建议', help_text='填写此任务的修改建议，必须是markdown格式')
 
     class Mata:
@@ -116,7 +179,7 @@ class Suggestion(models.Model):
                              to_field='task_name',
                              related_name='task',
                              verbose_name='任务',
-                             on_delete=models.SET_NULL)
+                             on_delete=models.DO_NOTHING)
     index = models.IntegerField(verbose_name='图片序号')
     problem = models.TextField(verbose_name='问题内容', help_text='填写此图片的问题详情，必须是markdown格式')
 
