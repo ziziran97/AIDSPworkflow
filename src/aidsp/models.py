@@ -5,7 +5,7 @@ from django.db import models
 
 class Project(models.Model):
     id = models.AutoField(primary_key=True)
-    project_id = models.CharField(max_length=50, verbose_name='项目id')
+    project_id = models.CharField(max_length=50, unique=True, verbose_name='项目id')
     project_name = models.CharField(max_length=50, verbose_name='项目名称')
     # tasks = models.ForeignKey(to='Task', to_field='project', related_name='project', on_delete=models.SET_NULL, verbose_name='任务')
     status = models.CharField(max_length=20, verbose_name='状态')
@@ -15,12 +15,22 @@ class Project(models.Model):
     total_demand = models.PositiveIntegerField(verbose_name='需求总量')
     total_describe = models.CharField(max_length=200, verbose_name='需求数量描述')
     deadline = models.DateTimeField(verbose_name='截止渐渐')
-    documents = models.ManyToManyField(to='Document', related_name='projects', verbose_name='文档')
+    documents = models.ManyToManyField(to='Document',
+                                       related_name='document_project',
+                                       verbose_name='文档')
     # datasets = models.ManyToManyField(to='Dataset', related_name='project', verbose_name='数据集')
-    labels = models.ManyToManyField(to='Label', related_name='labels', verbose_name='标签')
-    users_found = models.ManyToManyField(to='User', related_name='users_found', verbose_name='创建人')
-    users_manager = models.ManyToManyField(to='User', related_name='users_manager', verbose_name='管理人')
-    users_attend = models.ManyToManyField(to='User', related_name='users_attend', verbose_name='参与人')
+    labels = models.ManyToManyField(to='Label',
+                                    related_name='labels',
+                                    verbose_name='标签')
+    users_found = models.ManyToManyField(to='User',
+                                         related_name='users_found',
+                                         verbose_name='创建人')
+    users_manager = models.ManyToManyField(to='User',
+                                           related_name='users_manager',
+                                           verbose_name='管理人')
+    users_attend = models.ManyToManyField(to='User',
+                                          related_name='users_attend',
+                                          verbose_name='参与人')
 
     class Mata:
         verbose_name = verbose_name_plural = '项目'
@@ -45,7 +55,7 @@ class Document(models.Model):
     update_time = models.DateTimeField(verbose_name='更新时间')
     author = models.ForeignKey(to='User',
                                to_field='name',
-                               related_name='user',
+                               related_name='user_document',
                                verbose_name='姓名',
                                on_delete=models.DO_NOTHING)
 
@@ -57,12 +67,13 @@ class Dataset(models.Model):
     id = models.AutoField(primary_key=True)
     project = models.ForeignKey(to='Project',
                                 to_field='project_id',
+                                related_name='project_dataset',
                                 verbose_name='所属项目',
                                 on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=20, verbose_name='数据集名称')
     describe = models.CharField(max_length=200, verbose_name='数据集描述')
-    quantity_detial = models.CharField(max_length=200, verbose_name='数量详情')
-    path = models.CharField(verbose_name='存储路径')
+    quantity_detials = models.CharField(max_length=200, verbose_name='数量详情')
+    path = models.CharField(max_length=200, verbose_name='存储路径')
 
     class Mata:
         verbose_name = verbose_name_plural = '数据集'
@@ -86,7 +97,7 @@ class User(models.Model):
         (POSITION_LAB, '标注员'),
     )
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=10, verbose_name='姓名')
+    name = models.CharField(max_length=10, unique=True, verbose_name='姓名')
     username = models.CharField(max_length=10, verbose_name='用户名')
     phone = models.CharField(max_length=11, verbose_name='手机')
     email = models.EmailField(verbose_name='邮箱')
@@ -108,7 +119,7 @@ class Performance(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(to='User',
                              to_field='name',
-                             related_name='user',
+                             related_name='user_performance',
                              verbose_name='姓名',
                              on_delete=models.DO_NOTHING)
     performance = models.CharField(max_length=10, verbose_name='绩效')
@@ -120,10 +131,13 @@ class Performance(models.Model):
 
 class QA(models.Model):
     id = models.AutoField(primary_key=True)
-    documents = models.ManyToManyField(to='Document', related_name='projects', verbose_name='文档')
+    documents = models.ManyToManyField(to='Document',
+                                       related_name='QA_project',
+                                       verbose_name='文档')
     question_content = models.TextField(verbose_name='问题内容', help_text='填写问题的内容，必须是markdown格式')
     q_author = models.ForeignKey(to='User',
                                  to_field='name',
+                                 related_name='user_q_author',
                                  verbose_name='问题作者',
                                  on_delete=models.DO_NOTHING)
     q_label = models.CharField(max_length=50, verbose_name='问题标签')
@@ -131,11 +145,13 @@ class QA(models.Model):
     answer_content = models.TextField(verbose_name='答案内容', help_text='填写答案的内容，必须是markdown格式')
     a_author = models.ForeignKey(to='User',
                                  to_field='name',
+                                 related_name='user_a_author',
                                  verbose_name='答案作者',
                                  on_delete=models.DO_NOTHING)
     a_create_time = models.DateTimeField(verbose_name='答案创建时间')
     a_approval = models.ForeignKey(to='User',
                                  to_field='name',
+                                 related_name='user_a_approval',
                                  verbose_name='问题点赞人',
                                  on_delete=models.DO_NOTHING)
 
@@ -159,11 +175,11 @@ class Task(models.Model):
     id = models.AutoField(primary_key=True)
     project = models.ForeignKey(to='Project',
                                 to_field='project_id',
-                                related_name='project',
+                                related_name='project_task',
                                 verbose_name='所属项目',
                                 on_delete=models.DO_NOTHING)
     create_time = models.DateTimeField(verbose_name='创建时间')
-    task_name = models.CharField(max_length=20, verbose_name='任务名称')
+    task_name = models.CharField(max_length=20, unique=True, verbose_name='任务名称')
     task_link = models.URLField(verbose_name='任务链接')
     begin_time = models.DateTimeField(verbose_name='开始时间')
     done_time = models.DateTimeField(verbose_name='完成时间')
@@ -176,12 +192,12 @@ class Task(models.Model):
     number_of_reviews = models.PositiveSmallIntegerField(default=0, verbose_name='审核次数')
     assignee = models.ForeignKey(to='User',
                                  to_field='name',
-                                 related_name='assignee',
+                                 related_name='assignee_task',
                                  verbose_name='标注员',
                                  on_delete=models.DO_NOTHING)
     reviewer = models.ForeignKey(to='User',
                                  to_field='name',
-                                 related_name='reviewer',
+                                 related_name='reviewer_task',
                                  verbose_name='审核员',
                                  on_delete=models.DO_NOTHING)
     # suggestions = models.TextField(verbose_name='修改建议', help_text='填写此任务的修改建议，必须是markdown格式')
@@ -194,7 +210,7 @@ class Suggestion(models.Model):
     id = models.AutoField(primary_key=True)
     task = models.ForeignKey(to='Task',
                              to_field='task_name',
-                             related_name='task',
+                             related_name='suggestion_task',
                              verbose_name='任务',
                              on_delete=models.DO_NOTHING)
     index = models.IntegerField(verbose_name='图片序号')
