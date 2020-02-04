@@ -9,7 +9,7 @@ class Project(models.Model):
     project_name = models.CharField(max_length=50, verbose_name='项目名称')
     # tasks = models.ForeignKey(to='Task', to_field='project', related_name='project', on_delete=models.SET_NULL, verbose_name='任务')
     status = models.CharField(max_length=20, verbose_name='状态')
-    create_time = models.DateTimeField(verbose_name='创建时间')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     end_time = models.DateTimeField(verbose_name='结束时间')
     background = models.TextField(verbose_name='项目背景', help_text='填写此项目的需求背景，必须是markdown格式')
     total_demand = models.PositiveIntegerField(verbose_name='需求总量')
@@ -51,7 +51,7 @@ class Document(models.Model):
     title = models.CharField(max_length=50, verbose_name='标题')
     content = models.TextField(verbose_name='文档内容')
     old_content = models.TextField(verbose_name='文档内容历史版本')
-    create_time = models.DateTimeField(verbose_name='创建时间')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     update_time = models.DateTimeField(verbose_name='更新时间')
     author = models.ForeignKey(to='User',
                                to_field='name',
@@ -72,6 +72,8 @@ class Dataset(models.Model):
                                 on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=20, verbose_name='数据集名称')
     describe = models.CharField(max_length=200, verbose_name='数据集描述')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    update_time = models.DateTimeField(verbose_name='更新时间')
     quantity_detials = models.CharField(max_length=200, verbose_name='数量详情')
     path = models.CharField(max_length=200, verbose_name='存储路径')
 
@@ -123,7 +125,7 @@ class Performance(models.Model):
                              verbose_name='姓名',
                              on_delete=models.DO_NOTHING)
     performance = models.CharField(max_length=10, verbose_name='绩效')
-    date = models.DateField(verbose_name='打分日期')
+    date = models.DateField(auto_now_add=True, verbose_name='打分日期')
 
     class Mata:
         verbose_name = verbose_name_plural = '员工绩效'
@@ -141,7 +143,7 @@ class QA(models.Model):
                                  verbose_name='问题作者',
                                  on_delete=models.DO_NOTHING)
     q_label = models.CharField(max_length=50, verbose_name='问题标签')
-    q_create_time = models.DateTimeField(verbose_name='问题创建时间')
+    q_create_time = models.DateTimeField(auto_now_add=True, verbose_name='问题创建时间')
     answer_content = models.TextField(verbose_name='答案内容', help_text='填写答案的内容，必须是markdown格式')
     a_author = models.ForeignKey(to='User',
                                  to_field='name',
@@ -178,7 +180,7 @@ class Task(models.Model):
                                 related_name='project_task',
                                 verbose_name='所属项目',
                                 on_delete=models.DO_NOTHING)
-    create_time = models.DateTimeField(verbose_name='创建时间')
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     task_name = models.CharField(max_length=20, unique=True, verbose_name='任务名称')
     task_link = models.URLField(verbose_name='任务链接')
     begin_time = models.DateTimeField(verbose_name='开始时间')
@@ -208,6 +210,8 @@ class Task(models.Model):
 
 class Suggestion(models.Model):
     id = models.AutoField(primary_key=True)
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    update_time = models.DateTimeField(verbose_name='更新时间')
     task = models.ForeignKey(to='Task',
                              to_field='task_name',
                              related_name='suggestion_task',

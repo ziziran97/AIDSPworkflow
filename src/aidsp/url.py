@@ -4,5 +4,5 @@ from . import views
 app_name = 'aidsp'
 
 urlpatterns = [
-    path('', views.)
+    #path('', views.)
 ]
