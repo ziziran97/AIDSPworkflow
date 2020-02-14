@@ -14,7 +14,7 @@ class Project(models.Model):
     background = models.TextField(verbose_name='项目背景', help_text='填写此项目的需求背景，必须是markdown格式')
     total_demand = models.PositiveIntegerField(verbose_name='需求总量')
     total_describe = models.CharField(max_length=200, verbose_name='需求数量描述')
-    deadline = models.DateTimeField(verbose_name='截止渐渐')
+    deadline = models.DateTimeField(verbose_name='截止时间')
     documents = models.ManyToManyField(to='Document',
                                        related_name='document_project',
                                        verbose_name='文档')
