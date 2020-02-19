@@ -15,8 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import HttpResponse, render, redirect
+from .views import Login
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('aisdp/', include('aidsp.urls'))
+    path('aisdp/', include('aidsp.urls')),
+    path('login/', Login),
 ]
