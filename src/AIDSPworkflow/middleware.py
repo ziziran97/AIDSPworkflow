@@ -16,3 +16,7 @@ class LoginCheckMiddleware(MiddlewareMixin):
             print('用户未登录URL拦截 >>: ', request.path)
             # 主页未登录
             return HttpResponseRedirect('/login/')
+
+class DisableCSRFCheck(MiddlewareMixin):
+    def process_request(self, request):
+        setattr(request, '_dont_enforce_csrf_checks', True)

@@ -3,6 +3,7 @@ from .models import Project, Document, User, Dataset
 # Register your models here.
 
 admin.site.register(Project)
+admin.site.register(User)
 
 
 # @admin.register(Project)

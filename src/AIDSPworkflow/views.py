@@ -1,7 +1,8 @@
 from django.shortcuts import render
 from django.contrib.auth import authenticate,login,logout
 from django.shortcuts import render,redirect,reverse
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
+
 
 def Login(request):
     if request.method == 'GET':
@@ -21,3 +22,6 @@ def Login(request):
                 return render(request, 'login.html', {'status': '用户未激活'})
         else:
             return render(request, 'login.html', {'status': '用户名或密码错误，请重新输入'})
+
+def indexRedirect(request):
+    return HttpResponseRedirect('/aidsp')
