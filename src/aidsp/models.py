@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
 # Create your models here.
 
@@ -11,26 +12,26 @@ class Project(models.Model):
     status = models.CharField(max_length=20, verbose_name='状态')
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     end_time = models.DateTimeField(verbose_name='结束时间')
-    background = models.TextField(verbose_name='项目背景', help_text='填写此项目的需求背景，必须是markdown格式')
+    background = models.TextField(verbose_name='项目背景', help_text='填写此项目的需求背景，必须是markdown格式', blank=True, null=True)
     total_demand = models.PositiveIntegerField(verbose_name='需求总量')
-    total_describe = models.CharField(max_length=200, verbose_name='需求数量描述')
+    total_describe = models.CharField(max_length=200, verbose_name='需求数量描述', blank=True, null=True)
     deadline = models.DateTimeField(verbose_name='截止时间')
     documents = models.ManyToManyField(to='Document',
                                        related_name='document_project',
-                                       verbose_name='文档')
+                                       verbose_name='文档', blank=True, null=True)
     # datasets = models.ManyToManyField(to='Dataset', related_name='project', verbose_name='数据集')
     labels = models.ManyToManyField(to='Label',
                                     related_name='labels',
-                                    verbose_name='标签')
+                                    verbose_name='标签', blank=True, null=True)
     users_found = models.ManyToManyField(to='User',
                                          related_name='users_found',
                                          verbose_name='创建人')
     users_manager = models.ManyToManyField(to='User',
                                            related_name='users_manager',
-                                           verbose_name='管理人')
+                                           verbose_name='管理人', blank=True, null=True)
     users_attend = models.ManyToManyField(to='User',
                                           related_name='users_attend',
-                                          verbose_name='参与人')
+                                          verbose_name='参与人', blank=True, null=True)
 
     class Mata:
         verbose_name = verbose_name_plural = '项目'
@@ -89,7 +90,7 @@ class Label(models.Model):
         verbose_name = verbose_name_plural = '标签'
 
 
-class User(models.Model):
+class User(AbstractUser):
     POSITION_ALG = 0
     POSITION_MAN = 1
     POSITION_LAB = 2
@@ -98,13 +99,13 @@ class User(models.Model):
         (POSITION_MAN, '生产管理员'),
         (POSITION_LAB, '标注员'),
     )
-    id = models.AutoField(primary_key=True)
+    # id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=10, unique=True, verbose_name='姓名')
-    username = models.CharField(max_length=10, verbose_name='用户名')
+    # username = models.CharField(max_length=10, verbose_name='用户名')
     phone = models.CharField(max_length=11, verbose_name='手机')
-    email = models.EmailField(verbose_name='邮箱')
-    position = models.PositiveIntegerField(choices=POSITIONS, verbose_name='职位')
-    current_task = models.IntegerField(verbose_name='当前任务')
+    # email = models.EmailField(verbose_name='邮箱')
+    position = models.PositiveIntegerField(choices=POSITIONS, verbose_name='职位', null=True)
+    current_task = models.IntegerField(verbose_name='当前任务', null=True)
     # project_founder project_manager project_attend
     # tasks = models.ForeignKey()
     # tasks_review
