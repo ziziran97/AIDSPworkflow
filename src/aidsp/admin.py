@@ -1,9 +1,11 @@
 from django.contrib import admin
-from .models import Project, Document, User, Dataset
+from .models import Project, Document, User, Dataset, QA
 # Register your models here.
 
 admin.site.register(Project)
 admin.site.register(User)
+admin.site.register(Document)
+admin.site.register(QA)
 
 
 # @admin.register(Project)

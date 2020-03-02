@@ -1,6 +1,7 @@
 from rest_framework import serializers
+from django.forms.models import model_to_dict
 
-from .models import Project, User, Label
+from .models import Project, User, Label, Document
 # Create your views here.
 
 
@@ -19,10 +20,12 @@ class ProjectDetailSerializer(ProjectSerializer):
     labels = None
     users_found = None
     users_manager = None
+
     class Meta:
         model = Project
         fields = ['project_id', 'project_name', 'status', 'create_time', 'end_time', 'background', 'total_demand',
-                  'total_describe', 'deadline', 'documents', 'labels', 'users_found', 'users_manager', 'users_attend']
+                  'total_describe', 'deadline', 'labels', 'users_found', 'users_manager', 'users_attend',
+                  'requirement_documents', 'collection_documents', 'labeling_documents']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -35,3 +38,10 @@ class LabelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Label
         fields = ['id', 'name']
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Document
+        fields = ['content']
+
