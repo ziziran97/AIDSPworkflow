@@ -16,22 +16,35 @@ class Project(models.Model):
     total_demand = models.PositiveIntegerField(verbose_name='需求总量')
     total_describe = models.CharField(max_length=200, verbose_name='需求数量描述', blank=True, null=True)
     deadline = models.DateTimeField(verbose_name='截止时间')
-    documents = models.ManyToManyField(to='Document',
-                                       related_name='document_project',
-                                       verbose_name='文档', blank=True, null=True)
+    # documents = models.ManyToManyField(to='Document',
+    #                                    related_name='document_project',
+    #                                    verbose_name='文档')
+    requirement_documents = models.OneToOneField('Document', on_delete=models.CASCADE,
+                                                 verbose_name='需求文档', related_name='需求文档',
+                                                 blank=True, null=True)
+    collection_documents = models.OneToOneField('Document', on_delete=models.CASCADE,
+                                                 verbose_name='采集文档', related_name='采集文档',
+                                                blank=True, null=True)
+    labeling_documents = models.OneToOneField('Document', on_delete=models.CASCADE,
+                                                 verbose_name='标注文档', related_name='标注文档',
+                                              blank=True, null=True)
     # datasets = models.ManyToManyField(to='Dataset', related_name='project', verbose_name='数据集')
     labels = models.ManyToManyField(to='Label',
                                     related_name='labels',
-                                    verbose_name='标签', blank=True, null=True)
+                                    verbose_name='标签',
+                                    blank=True, null=True)
     users_found = models.ManyToManyField(to='User',
                                          related_name='users_found',
-                                         verbose_name='创建人')
+                                         verbose_name='创建人',
+                                         blank=True, null=True)
     users_manager = models.ManyToManyField(to='User',
                                            related_name='users_manager',
-                                           verbose_name='管理人', blank=True, null=True)
+                                           verbose_name='管理人',
+                                           blank=True, null=True)
     users_attend = models.ManyToManyField(to='User',
                                           related_name='users_attend',
-                                          verbose_name='参与人', blank=True, null=True)
+                                          verbose_name='参与人',
+                                          blank=True, null=True)
 
     class Mata:
         verbose_name = verbose_name_plural = '项目'
@@ -49,19 +62,19 @@ class Document(models.Model):
     )
     id = models.AutoField(primary_key=True)
     type = models.PositiveSmallIntegerField(choices=TYPES, verbose_name='文档类型')
-    title = models.CharField(max_length=50, verbose_name='标题')
+    title = models.CharField(max_length=50, verbose_name='标题', blank=True, null=True)
     content = models.TextField(verbose_name='文档内容')
-    old_content = models.TextField(verbose_name='文档内容历史版本')
+    old_content = models.TextField(verbose_name='文档内容历史版本', blank=True, null=True)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    update_time = models.DateTimeField(verbose_name='更新时间')
+    update_time = models.DateTimeField(verbose_name='更新时间', blank=True, null=True)
     author = models.ForeignKey(to='User',
                                to_field='name',
-                               related_name='user_document',
                                verbose_name='姓名',
-                               on_delete=models.DO_NOTHING)
+                               on_delete=models.DO_NOTHING, blank=True, null=True)
 
     class Mata:
         verbose_name = verbose_name_plural = '文档'
+
 
 
 class Dataset(models.Model):
@@ -88,6 +101,9 @@ class Label(models.Model):
 
     class Mata:
         verbose_name = verbose_name_plural = '标签'
+
+    def __str__(self):
+        return self.name
 
 
 class User(AbstractUser):
@@ -134,30 +150,35 @@ class Performance(models.Model):
 
 class QA(models.Model):
     id = models.AutoField(primary_key=True)
-    documents = models.ManyToManyField(to='Document',
-                                       related_name='QA_project',
-                                       verbose_name='文档')
-    question_content = models.TextField(verbose_name='问题内容', help_text='填写问题的内容，必须是markdown格式')
-    q_author = models.ForeignKey(to='User',
-                                 to_field='name',
-                                 related_name='user_q_author',
-                                 verbose_name='问题作者',
-                                 on_delete=models.DO_NOTHING)
-    q_label = models.CharField(max_length=50, verbose_name='问题标签')
-    q_create_time = models.DateTimeField(auto_now_add=True, verbose_name='问题创建时间')
-    answer_content = models.TextField(verbose_name='答案内容', help_text='填写答案的内容，必须是markdown格式')
-    a_author = models.ForeignKey(to='User',
-                                 to_field='name',
-                                 related_name='user_a_author',
-                                 verbose_name='答案作者',
-                                 on_delete=models.DO_NOTHING)
-    a_create_time = models.DateTimeField(verbose_name='答案创建时间')
-    a_approval = models.ForeignKey(to='User',
-                                 to_field='name',
-                                 related_name='user_a_approval',
-                                 verbose_name='问题点赞人',
-                                 on_delete=models.DO_NOTHING)
-
+    # documents = models.ManyToManyField(to='Document',
+    #                                    related_name='QA_project',
+    #                                    verbose_name='文档')
+    # question_content = models.TextField(verbose_name='问题内容', help_text='填写问题的内容，必须是markdown格式')
+    # q_author = models.ForeignKey(to='User',
+    #                              to_field='name',
+    #                              related_name='user_q_author',
+    #                              verbose_name='问题作者',
+    #                              on_delete=models.DO_NOTHING)
+    # q_label = models.CharField(max_length=50, verbose_name='问题标签')
+    # q_create_time = models.DateTimeField(auto_now_add=True, verbose_name='问题创建时间')
+    # answer_content = models.TextField(verbose_name='答案内容', help_text='填写答案的内容，必须是markdown格式')
+    # a_author = models.ForeignKey(to='User',
+    #                              to_field='name',
+    #                              related_name='user_a_author',
+    #                              verbose_name='答案作者',
+    #                              on_delete=models.DO_NOTHING)
+    # a_create_time = models.DateTimeField(verbose_name='答案创建时间')
+    # a_approval = models.ForeignKey(to='User',
+    #                              to_field='name',
+    #                              related_name='user_a_approval',
+    #                              verbose_name='问题点赞人',
+    #                              on_delete=models.DO_NOTHING)
+    author = models.CharField(max_length=50, verbose_name='作者')
+    avatar = models.TextField(verbose_name='区分Q或A的头像')
+    content = models.TextField(verbose_name='内容')
+    datetime = models.DateTimeField(verbose_name='评论时间')
+    documents = models.ForeignKey(to='Document',
+                                on_delete=models.CASCADE, verbose_name='文档')
     class Mata:
         verbose_name = verbose_name_plural = '问题与回答'
 
