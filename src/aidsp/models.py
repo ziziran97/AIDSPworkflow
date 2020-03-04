@@ -5,8 +5,9 @@ from django.contrib.auth.models import AbstractUser
 
 
 class Project(models.Model):
+
     id = models.AutoField(primary_key=True)
-    project_id = models.CharField(max_length=50, unique=True, verbose_name='项目id')
+    project_id = models.IntegerField(unique=True, auto_created=True, verbose_name='项目id', blank=True, null=True)
     project_name = models.CharField(max_length=50, verbose_name='项目名称')
     # tasks = models.ForeignKey(to='Task', to_field='project', related_name='project', on_delete=models.SET_NULL, verbose_name='任务')
     status = models.CharField(max_length=20, verbose_name='状态')
@@ -45,6 +46,15 @@ class Project(models.Model):
                                           related_name='users_attend',
                                           verbose_name='参与人',
                                           blank=True, null=True)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        super().save(force_insert=False, force_update=False, using=None,
+             update_fields=None)
+        self.project_id = self.id
+        super().save(force_insert=False, force_update=False, using=None,
+             update_fields=None)
+
 
     class Mata:
         verbose_name = verbose_name_plural = '项目'
@@ -129,6 +139,9 @@ class User(AbstractUser):
     # q_a_As
     # q_a_approvals
     # performance
+
+    def __str__(self):
+        return self.name
 
     class Mata:
         verbose_name = verbose_name_plural = '用户'
