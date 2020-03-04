@@ -17,7 +17,7 @@ def Login(request):
                 login(request, user)
                 # 如果调用login方法以后，
                 # request对象就会激活user属性，这个属性不管登录或者未登录都是存在
-                return HttpResponse("登录成功")
+                return HttpResponseRedirect('/aidsp')
             else:
                 return render(request, 'login.html', {'status': '用户未激活'})
         else:

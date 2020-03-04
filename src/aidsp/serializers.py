@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.forms.models import model_to_dict
 
-from .models import Project, User, Label, Document
+from .models import Project, User, Label, Document, QA
 # Create your views here.
 
 
@@ -40,8 +40,8 @@ class LabelSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 
-class DocumentSerializer(serializers.ModelSerializer):
+class QASerializer(serializers.ModelSerializer):
     class Meta:
-        model = Document
-        fields = ['content']
+        model = QA
+        fields = ['author', 'avatar', 'content', 'datetime', 'documents']
 
