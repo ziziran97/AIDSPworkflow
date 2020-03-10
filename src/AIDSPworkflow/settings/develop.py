@@ -40,9 +40,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'AIDSPworkflow.middleware.LoginCheckMiddleware',
     'AIDSPworkflow.middleware.DisableCSRFCheck',
-
     'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware'
+    'django.contrib.sessions.middleware.SessionMiddleware'
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
@@ -153,3 +152,4 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 APPEND_slash = False
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
