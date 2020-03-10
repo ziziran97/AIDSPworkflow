@@ -1,8 +1,5 @@
-from django.shortcuts import render
-from rest_framework.views import APIView
-from rest_framework import serializers
-from rest_framework import viewsets
-from .serializers import ProjectSerializer
+from django.shortcuts import render, HttpResponse
+
 from .models import Project
 # Create your views here.
 
@@ -10,10 +7,18 @@ def project_index(request):
     return render(request, 'index.html')
 
 
-def project_detail(request, project_id=None):
+def project_detail(request, id=None):
     try:
-        post = Project.objects.get(id=project_id)
+        post = Project.objects.get(id=id)
     except Project.DoesNotExist:
         post = None
-    return render(request, 'project_detail.html', context={'post': post})
+        return render(request, 'project_detail.html')
+    for ele in post.users_found.values('id'):
+        if request.user.id == ele['id']:
+            return render(request, 'project_detail.html')
+    return HttpResponse('对不起，您没有编辑该项目的权限')
 
+
+def project_display(request, id=None):
+
+    return render(request, 'project_display.html')

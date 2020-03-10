@@ -13,7 +13,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['project_id', 'project_name', 'status', 'create_time', 'labels', 'users_found', 'users_manager']
+        fields = ['id', 'project_id', 'project_name', 'status', 'create_time', 'labels', 'users_found', 'users_manager']
 
 
 class ProjectDetailSerializer(ProjectSerializer):
@@ -45,3 +45,17 @@ class QASerializer(serializers.ModelSerializer):
         model = QA
         fields = ['author', 'avatar', 'content', 'datetime', 'documents']
 
+
+class ProjectDisplaySerializer(serializers.ModelSerializer):
+    labels = serializers.StringRelatedField(many=True)
+    users_found = serializers.StringRelatedField(many=True)
+    users_manager = serializers.StringRelatedField(many=True)
+    users_attend = serializers.StringRelatedField(many=True)
+    # requirement_documents = serializers.StringRelatedField()
+    # collection_documents = serializers.StringRelatedField()
+    # labeling_documents = serializers.StringRelatedField()
+    class Meta:
+        model = Project
+        fields = ['project_id', 'project_name', 'status', 'create_time', 'end_time', 'background', 'total_demand',
+                  'total_describe', 'deadline', 'labels', 'users_found', 'users_manager', 'users_attend',
+                  'requirement_documents', 'collection_documents', 'labeling_documents']

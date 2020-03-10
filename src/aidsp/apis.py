@@ -1,8 +1,10 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import Project, User, Label, Document, QA
-from .serializers import ProjectSerializer, ProjectDetailSerializer, UserSerializer, LabelSerializer, QASerializer
+from .serializers import ProjectSerializer, ProjectDetailSerializer, UserSerializer, LabelSerializer, QASerializer, ProjectDisplaySerializer
 from django.forms.models import model_to_dict
+from django.utils import timezone
+from django.db.models import Max
 
 class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
@@ -25,6 +27,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 qalist.append(model_to_dict(qa))
             ndata['req_doc'] = dqueryset.content
             ndata['req_qa'] = qalist
+        except Exception as e:
+            print(e)
+        try:
             dqueryset = Document.objects.get(id=ndata['collection_documents'])
             qas = dqueryset.qa_set.all()
             qalist = []
@@ -32,7 +37,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 qalist.append(model_to_dict(qa))
             ndata['col_doc'] = dqueryset.content
             ndata['col_qa'] = qalist
-
+        except Exception as e:
+            print(e)
+        try:
             dqueryset = Document.objects.get(id=ndata['labeling_documents'])
             qas = dqueryset.qa_set.all()
             qalist = []
@@ -42,6 +49,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
             ndata['lab_qa'] = qalist
         except Exception as e:
             print(e)
+        ndata['now_user'] = str(request.user)
+        ndata['is_admin'] = request.user.id in ndata['users_found'] or request.user.id in ndata['users_manager']
         return Response(ndata)
 
     def update(self, request, *args, **kwargs):
@@ -75,7 +84,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             if ele != '':
                 data.update({'users_attend': int(ele)})
         # 文档保存方式
-        project_mo = Project.objects.get(id=data['project_id'])
+        project_mo = Project.objects.get(project_id=data['project_id'])
         if data['requirement_documents']:
             if not project_mo.requirement_documents:
                 ndoc = Document.objects.create(type=0, content=data['requirement_documents'])
@@ -100,6 +109,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         del data['requirement_documents']
         del data['collection_documents']
         del data['labeling_documents']
+
         return super().update(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
@@ -150,6 +160,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if bdata['labeling_documents']:
             ndoc = Document.objects.create(type=0, content=bdata['labeling_documents'])
             data.update({'labeling_documents': ndoc.id})
+        create_time = timezone.now().strftime("%Y%m%d")
+        maxid = Project.objects.all().aggregate(Max('project_id'))['project_id__max']
+        if maxid:
+            if maxid.split('_')[0] == create_time:
+                data['project_id'] = '%s_%02d' % (create_time, int(maxid.split('_')[1]) + 1)
+            else:
+                data['project_id'] = '%s_01' % create_time
+        else:
+            data['project_id'] = '%s_01' % create_time
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -172,4 +192,47 @@ class QAViewSet(viewsets.ModelViewSet):
     queryset = QA.objects.filter()
 
 
+class ProjectdisplayViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectDisplaySerializer
+    queryset = Project.objects.filter()
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        ndata = dict(serializer.data)
+        try:
+            dqueryset = Document.objects.get(id=ndata['requirement_documents'])
+            qas = dqueryset.qa_set.all()
+            qalist = []
+            for qa in qas:
+                qalist.append(model_to_dict(qa))
+            ndata['req_qa'] = qalist
+            ndata['req_doc'] = dqueryset.content
+
+        except Exception as e:
+            print(e)
+        try:
+            dqueryset = Document.objects.get(id=ndata['collection_documents'])
+            qas = dqueryset.qa_set.all()
+            qalist = []
+            for qa in qas:
+                qalist.append(model_to_dict(qa))
+            ndata['col_qa'] = qalist
+            ndata['col_doc'] = dqueryset.content
+
+        except Exception as e:
+            print(e)
+        try:
+            dqueryset = Document.objects.get(id=ndata['labeling_documents'])
+            qas = dqueryset.qa_set.all()
+            qalist = []
+            for qa in qas:
+                qalist.append(model_to_dict(qa))
+            ndata['lab_qa'] = qalist
+            ndata['lab_doc'] = dqueryset.content
+
+        except Exception as e:
+            print(e)
+        ndata['now_user'] = str(request.user)
+        ndata['is_admin'] = request.user.name in ndata['users_found'] or request.user.name in ndata['users_manager']
+        return Response(ndata)

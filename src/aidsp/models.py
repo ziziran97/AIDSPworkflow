@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, PermissionsMixin
 
 # Create your models here.
 
@@ -7,7 +7,8 @@ from django.contrib.auth.models import AbstractUser
 class Project(models.Model):
 
     id = models.AutoField(primary_key=True)
-    project_id = models.IntegerField(unique=True, auto_created=True, verbose_name='项目id', blank=True, null=True)
+    project_id = models.CharField(max_length=50, verbose_name='项目id')
+    # project_id = models.IntegerField(unique=True, auto_created=True, verbose_name='项目id', blank=True, null=True)
     project_name = models.CharField(max_length=50, verbose_name='项目名称')
     # tasks = models.ForeignKey(to='Task', to_field='project', related_name='project', on_delete=models.SET_NULL, verbose_name='任务')
     status = models.CharField(max_length=20, verbose_name='状态')
@@ -47,18 +48,17 @@ class Project(models.Model):
                                           verbose_name='参与人',
                                           blank=True, null=True)
 
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        super().save(force_insert=False, force_update=False, using=None,
-             update_fields=None)
-        self.project_id = self.id
-        super().save(force_insert=False, force_update=False, using=None,
-             update_fields=None)
+    # def save(self, force_insert=False, force_update=False, using=None,
+    #          update_fields=None):
+    #     print(create_time)
+    #     self.project_id = self.id
+    #     super().save(force_insert=False, force_update=False, using=None,
+    #          update_fields=None)
 
 
     class Mata:
         verbose_name = verbose_name_plural = '项目'
-        ordering = 'project_id'
+        ordering = 'id'
 
 
 class Document(models.Model):
@@ -85,12 +85,14 @@ class Document(models.Model):
     class Mata:
         verbose_name = verbose_name_plural = '文档'
 
+    def __str__(self):
+        return self.content
 
 
 class Dataset(models.Model):
     id = models.AutoField(primary_key=True)
     project = models.ForeignKey(to='Project',
-                                to_field='project_id',
+                                to_field='id',
                                 related_name='project_dataset',
                                 verbose_name='所属项目',
                                 on_delete=models.DO_NOTHING)
@@ -125,13 +127,10 @@ class User(AbstractUser):
         (POSITION_MAN, '生产管理员'),
         (POSITION_LAB, '标注员'),
     )
-    # id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=10, unique=True, verbose_name='姓名')
-    # username = models.CharField(max_length=10, verbose_name='用户名')
     phone = models.CharField(max_length=11, verbose_name='手机')
-    # email = models.EmailField(verbose_name='邮箱')
     position = models.PositiveIntegerField(choices=POSITIONS, verbose_name='职位', null=True)
-    current_task = models.IntegerField(verbose_name='当前任务', null=True)
+    current_task = models.IntegerField(verbose_name='当前任务', blank=True, null=True)
     # project_founder project_manager project_attend
     # tasks = models.ForeignKey()
     # tasks_review
@@ -211,7 +210,7 @@ class Task(models.Model):
     )
     id = models.AutoField(primary_key=True)
     project = models.ForeignKey(to='Project',
-                                to_field='project_id',
+                                to_field='id',
                                 related_name='project_task',
                                 verbose_name='所属项目',
                                 on_delete=models.DO_NOTHING)
