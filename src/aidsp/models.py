@@ -189,10 +189,22 @@ class QA(models.Model):
     avatar = models.TextField(verbose_name='区分Q或A的头像')
     content = models.TextField(verbose_name='内容')
     datetime = models.DateTimeField(verbose_name='评论时间')
-    documents = models.ForeignKey(to='Document',
-                                on_delete=models.CASCADE, verbose_name='文档')
+    documents = models.ForeignKey(to='Document', on_delete=models.CASCADE, verbose_name='文档')
+
     class Mata:
         verbose_name = verbose_name_plural = '问题与回答'
+
+
+class Reply(models.Model):
+    id = models.AutoField(primary_key=True)
+    author = models.CharField(max_length=50, verbose_name='作者')
+    avatar = models.TextField(verbose_name='区分Q或A的头像')
+    content = models.TextField(verbose_name='内容')
+    datetime = models.DateTimeField(verbose_name='评论时间')
+    toquestion = models.ForeignKey(to='QA', on_delete=models.CASCADE, verbose_name='问题')
+
+    class Mata:
+        verbose_name = verbose_name_plural = '回答'
 
 
 class Task(models.Model):

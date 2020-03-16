@@ -1,10 +1,11 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from .models import Project, User, Label, Document, QA
-from .serializers import ProjectSerializer, ProjectDetailSerializer, UserSerializer, LabelSerializer, QASerializer, ProjectDisplaySerializer
+from .models import Project, User, Label, Document, QA, Reply
+from .serializers import ProjectSerializer, ProjectDetailSerializer, UserSerializer, LabelSerializer, QASerializer, ProjectDisplaySerializer, ReplySerializer
 from django.forms.models import model_to_dict
 from django.utils import timezone
 from django.db.models import Max
+
 
 class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
@@ -191,6 +192,28 @@ class QAViewSet(viewsets.ModelViewSet):
     serializer_class = QASerializer
     queryset = QA.objects.filter()
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        qaobj = QA.objects.create(author=serializer.data['author'],
+                                  avatar=serializer.data['avatar'],
+                                  content=serializer.data['content'],
+                                  datetime=serializer.data['datetime'],
+                                  documents=Document.objects.get(id=serializer.data['documents']),
+                                  )
+        qaobj.save()
+        print(qaobj.id)
+        # self.perform_create(serializer)
+        pdata = dict(serializer.data)
+        pdata.update({'id': qaobj.id})
+        headers = self.get_success_headers(serializer.data)
+        return Response(pdata, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class ReplyViewSet(viewsets.ModelViewSet):
+    serializer_class = ReplySerializer
+    queryset = Reply.objects.filter()
+
 
 class ProjectdisplayViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectDisplaySerializer
@@ -205,7 +228,12 @@ class ProjectdisplayViewSet(viewsets.ModelViewSet):
             qas = dqueryset.qa_set.all()
             qalist = []
             for qa in qas:
-                qalist.append(model_to_dict(qa))
+                qamdict = model_to_dict(qa)
+                replys = qa.reply_set.all()
+                if replys:
+                    replymdict = model_to_dict(replys[len(replys)-1])
+                    qamdict['havechildren'] = replymdict
+                qalist.append(qamdict)
             ndata['req_qa'] = qalist
             ndata['req_doc'] = dqueryset.content
 
@@ -216,7 +244,12 @@ class ProjectdisplayViewSet(viewsets.ModelViewSet):
             qas = dqueryset.qa_set.all()
             qalist = []
             for qa in qas:
-                qalist.append(model_to_dict(qa))
+                qamdict = model_to_dict(qa)
+                replys = qa.reply_set.all()
+                if replys:
+                    replymdict = model_to_dict(replys[len(replys)-1])
+                    qamdict['havechildren'] = replymdict
+                qalist.append(qamdict)
             ndata['col_qa'] = qalist
             ndata['col_doc'] = dqueryset.content
 
@@ -227,7 +260,12 @@ class ProjectdisplayViewSet(viewsets.ModelViewSet):
             qas = dqueryset.qa_set.all()
             qalist = []
             for qa in qas:
-                qalist.append(model_to_dict(qa))
+                qamdict = model_to_dict(qa)
+                replys = qa.reply_set.all()
+                if replys:
+                    replymdict = model_to_dict(replys[len(replys)-1])
+                    qamdict['havechildren'] = replymdict
+                qalist.append(qamdict)
             ndata['lab_qa'] = qalist
             ndata['lab_doc'] = dqueryset.content
 
@@ -236,3 +274,19 @@ class ProjectdisplayViewSet(viewsets.ModelViewSet):
         ndata['now_user'] = str(request.user)
         ndata['is_admin'] = request.user.name in ndata['users_found'] or request.user.name in ndata['users_manager']
         return Response(ndata)
+
+    def update(self, request, *args, **kwargs):
+        data = request.POST
+        if 'project_name' not in data and data['status']:
+            partc = Project.objects.get(project_id=data['project_id'])
+            partc.status = data['status']
+            if data['users_attend']:
+                usesalist = data['users_attend'].split(',')
+            else:
+                usesalist = []
+            partc.users_attend.set(usesalist)
+            partc.save()
+
+            return Response(['成功？'])
+        return Response(['do nothing'])
+
