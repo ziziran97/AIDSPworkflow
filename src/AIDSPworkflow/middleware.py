@@ -13,7 +13,6 @@ class LoginCheckMiddleware(MiddlewareMixin):
         match = re.search(pattern, request.path)
         # 需要拦截的url
         if match and not request.user.is_authenticated:
-            print('用户未登录URL拦截 >>: ', request.path)
             # 主页未登录
             return HttpResponseRedirect('/login/')
 

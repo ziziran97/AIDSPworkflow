@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.forms.models import model_to_dict
 
-from .models import Project, User, Label, Document, QA
+from .models import Project, User, Label, Document, QA, Reply
 # Create your views here.
 
 
@@ -10,17 +10,19 @@ class ProjectSerializer(serializers.ModelSerializer):
     labels = serializers.StringRelatedField(many=True)
     users_found = serializers.StringRelatedField(many=True)
     users_manager = serializers.StringRelatedField(many=True)
+    users_attend = serializers.StringRelatedField(many=True)
 
     class Meta:
         model = Project
-        fields = ['id', 'project_id', 'project_name', 'status', 'create_time', 'labels', 'users_found', 'users_manager']
+        fields = ['id', 'project_id', 'project_name', 'status', 'create_time', 'labels', 'users_found', 'users_manager', 'users_attend']
 
 
 class ProjectDetailSerializer(ProjectSerializer):
     labels = None
     users_found = None
     users_manager = None
-
+    users_attend = None
+    
     class Meta:
         model = Project
         fields = ['project_id', 'project_name', 'status', 'create_time', 'end_time', 'background', 'total_demand',
@@ -46,11 +48,17 @@ class QASerializer(serializers.ModelSerializer):
         fields = ['author', 'avatar', 'content', 'datetime', 'documents']
 
 
+class ReplySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reply
+        fields = ['author', 'avatar', 'content', 'datetime', 'toquestion']
+
+
 class ProjectDisplaySerializer(serializers.ModelSerializer):
     labels = serializers.StringRelatedField(many=True)
     users_found = serializers.StringRelatedField(many=True)
     users_manager = serializers.StringRelatedField(many=True)
-    users_attend = serializers.StringRelatedField(many=True)
+    # users_attend = serializers.StringRelatedField(many=True)
     # requirement_documents = serializers.StringRelatedField()
     # collection_documents = serializers.StringRelatedField()
     # labeling_documents = serializers.StringRelatedField()
