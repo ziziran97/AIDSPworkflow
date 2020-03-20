@@ -96,25 +96,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'AIDSPworkflow.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/3.0/ref/settings/#databases
+#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'aidsp',
-#         'USER': 'django_start',
-#         'PASSWORD':'django_start',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME':  os.path.join(BASE_DIR, 'db.sqlite3')
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'aidsp',
+        'USER': 'django_start',
+        'PASSWORD':'django_start',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+# DATABASES = {
+#     'default': {z
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME':  os.path.join(BASE_DIR, 'db.sqlite3')
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
