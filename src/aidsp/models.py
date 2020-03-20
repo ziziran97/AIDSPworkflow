@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, PermissionsMixin
-
+from django.utils import timezone
 # Create your models here.
 
 
@@ -13,7 +13,7 @@ class Project(models.Model):
     # tasks = models.ForeignKey(to='Task', to_field='project', related_name='project', on_delete=models.SET_NULL, verbose_name='任务')
     status = models.CharField(max_length=20, verbose_name='状态')
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    end_time = models.DateTimeField(verbose_name='结束时间')
+    end_time = models.DateTimeField(verbose_name='结束时间', blank=True, null=True)
     background = models.TextField(verbose_name='项目背景', help_text='填写此项目的需求背景，必须是markdown格式', blank=True, null=True)
     total_demand = models.PositiveIntegerField(verbose_name='需求总量')
     total_describe = models.CharField(max_length=200, verbose_name='需求数量描述', blank=True, null=True)
@@ -47,18 +47,23 @@ class Project(models.Model):
                                           related_name='users_attend',
                                           verbose_name='参与人',
                                           blank=True, null=True)
+    def __str__(self):
+        return self.project_id + '_' + self.project_name
 
-    # def save(self, force_insert=False, force_update=False, using=None,
-    #          update_fields=None):
-    #     print(create_time)
-    #     self.project_id = self.id
-    #     super().save(force_insert=False, force_update=False, using=None,
-    #          update_fields=None)
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.status == '完结':
+            self.end_time = timezone.now()
+
+        super().save(force_insert=False, force_update=False, using=None,
+             update_fields=None)
 
 
     class Mata:
         verbose_name = verbose_name_plural = '项目'
         ordering = 'id'
+
+
 
 
 class Document(models.Model):
@@ -95,13 +100,14 @@ class Dataset(models.Model):
                                 to_field='id',
                                 related_name='project_dataset',
                                 verbose_name='所属项目',
-                                on_delete=models.DO_NOTHING)
+                                on_delete=models.DO_NOTHING, blank=True, null=True)
     name = models.CharField(max_length=20, verbose_name='数据集名称')
-    describe = models.CharField(max_length=200, verbose_name='数据集描述')
+    describe = models.CharField(max_length=200, verbose_name='数据集描述', blank=True, null=True)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    update_time = models.DateTimeField(verbose_name='更新时间')
-    quantity_detials = models.CharField(max_length=200, verbose_name='数量详情')
-    path = models.CharField(max_length=200, verbose_name='存储路径')
+    update_time = models.DateTimeField(verbose_name='更新时间', auto_now=True)
+    quantity_detials = models.CharField(max_length=200, verbose_name='数量详情', blank=True, null=True)
+    path = models.CharField(max_length=200, verbose_name='存储路径', blank=True, null=True)
+    img = models.TextField(verbose_name='略缩图', blank=True, null=True)
 
     class Mata:
         verbose_name = verbose_name_plural = '数据集'
