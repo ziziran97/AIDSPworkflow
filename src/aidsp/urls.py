@@ -1,8 +1,9 @@
 from django.urls import path, include
 from . import views
 from django.contrib import admin
-from .views import project_index, project_detail, project_display
-from .apis import ProjectViewSet, UserViewSet, LabelViewSet, QAViewSet, ProjectdisplayViewSet, ReplyViewSet
+from .views import project_index, project_detail, project_display, dataset_display, dataset_detail,\
+    dataset_fileupload, dataset_filedownload
+from .apis import ProjectViewSet, UserViewSet, LabelViewSet, QAViewSet, ProjectdisplayViewSet, ReplyViewSet, DatasetViewSet
 from rest_framework.routers import DefaultRouter
 
 
@@ -13,6 +14,7 @@ router.register('label', LabelViewSet, basename='api-label')
 router.register('qa', QAViewSet, basename='api-qa')
 router.register('pdisplay', ProjectdisplayViewSet, basename='api-pdisplay')
 router.register('reply', ReplyViewSet, basename='api-reply')
+router.register('dataset', DatasetViewSet, basename='api-dataset')
 
 urlpatterns = [
     path('', project_index),
@@ -20,6 +22,11 @@ urlpatterns = [
     path('api/', include((router.urls, str(router)), namespace='api')),
     path('newproject/', project_detail),
     path('display/<id>/', project_display),
+    path('dataset_display/<id>/', dataset_display),
+    path('newdataset/', dataset_detail),
+    path('dataset_detail/<id>/', dataset_detail),
+    path('dataset/fileupload/', dataset_fileupload),
+    path('dataset/filedownload/<filename>', dataset_filedownload),
 
 ]
 

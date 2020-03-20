@@ -1,7 +1,6 @@
 from rest_framework import serializers
-from django.forms.models import model_to_dict
 
-from .models import Project, User, Label, Document, QA, Reply
+from .models import Project, User, Label, QA, Reply, Dataset
 # Create your views here.
 
 
@@ -14,7 +13,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['id', 'project_id', 'project_name', 'status', 'create_time', 'labels', 'users_found', 'users_manager', 'users_attend']
+        fields = ['id', 'project_id', 'project_name', 'status', 'create_time', 'deadline', 'labels', 'users_found', 'users_manager', 'users_attend']
 
 
 class ProjectDetailSerializer(ProjectSerializer):
@@ -67,3 +66,21 @@ class ProjectDisplaySerializer(serializers.ModelSerializer):
         fields = ['project_id', 'project_name', 'status', 'create_time', 'end_time', 'background', 'total_demand',
                   'total_describe', 'deadline', 'labels', 'users_found', 'users_manager', 'users_attend',
                   'requirement_documents', 'collection_documents', 'labeling_documents']
+
+
+class DatasetSerializer(serializers.ModelSerializer):
+    project = serializers.StringRelatedField()
+
+    class Meta:
+        model = Dataset
+        fields = ['id', 'name', 'project', 'describe', 'create_time', 'update_time', 'quantity_detials',
+                  'path', 'img',  'project_id']
+
+
+class DatasetDetailSerializer(DatasetSerializer):
+    project = None
+
+    class Meta:
+        model = Dataset
+        fields = ['id', 'name', 'project', 'describe', 'create_time', 'update_time', 'quantity_detials',
+                  'path', 'img',  'project_id']
