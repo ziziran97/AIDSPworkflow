@@ -18,7 +18,8 @@ router.register('dataset', DatasetViewSet, basename='api-dataset')
 
 urlpatterns = [
     path('', aidspRedirect),
-    path('<page>', project_index),
+    path('project', project_index),
+    path('dataset', project_index),
     path('detail/<id>/', project_detail),
     path('api/', include((router.urls, str(router)), namespace='api')),
     path('newproject/', project_detail),
