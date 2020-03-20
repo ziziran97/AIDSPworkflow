@@ -1,12 +1,12 @@
 from django.http import FileResponse
-from django.shortcuts import render, HttpResponse
+from django.shortcuts import render, HttpResponse, HttpResponseRedirect
 from .models import Project
 # Create your views here.
 import os
 from django.conf import settings
 
 
-def project_index(request):
+def project_index(request,page=None):
     return render(request, 'index.html')
 
 
@@ -52,3 +52,7 @@ def dataset_filedownload(request, filename=None):
     response =FileResponse(file)
     response['Content-Type'] = 'application/octet-stream'
     return response
+
+
+def aidspRedirect(request):
+    return HttpResponseRedirect('project')
