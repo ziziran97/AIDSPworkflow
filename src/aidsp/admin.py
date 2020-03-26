@@ -1,4 +1,4 @@
-from .models import Project, User, Dataset, QA
+from .models import Project, User, Dataset, QA, Task
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy
@@ -21,6 +21,7 @@ class UserProfileAdmin(UserAdmin):
 admin.site.register(Project)
 admin.site.register(User, UserProfileAdmin)
 admin.site.register(QA)
+admin.site.register(Task)
 
 
 # @admin.register(Project)
