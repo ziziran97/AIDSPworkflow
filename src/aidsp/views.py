@@ -1,9 +1,12 @@
-from django.http import FileResponse
+from django.db.models import QuerySet
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import render, HttpResponse, HttpResponseRedirect
-from .models import Project
+from .models import Project, Task, User
 # Create your views here.
 import os
 from django.conf import settings
+from django.forms.models import model_to_dict
+from django.db.utils import IntegrityError
 
 
 def project_index(request,page=None):
@@ -56,3 +59,104 @@ def dataset_filedownload(request, filename=None):
 
 def aidspRedirect(request):
     return HttpResponseRedirect('project')
+
+
+def taskPost(request):
+    # for chunk in request.FILES['csvFile'].chunks():
+    #     print(chunk)
+    #     print('11')
+    if request.method == 'POST':
+        line = request.FILES['csvFile'].readline()
+        while line:
+            linedict = line.decode("gbk").replace('\r', '').replace('\n', '').split(',')
+            line = request.FILES['csvFile'].readline()
+            mpid = Project.objects.get(id=request.POST['project_id'])
+            ntask = Task.objects.create(project=mpid, task_name=linedict[0], task_link=linedict[1],
+                                        gross=linedict[2], status=0, belong_task=request.POST['taskName'],
+                                        task_type=request.POST['task_type'])
+            if len(linedict) > 3:
+                for elename in linedict[3].split(' '):
+                    try:
+                        massignee = User.objects.get(name=elename)
+                        ntask.assignee.add(massignee)
+
+                    except:
+                        pass
+            if len(linedict) > 4:
+                for elename in linedict[4].split(' '):
+                    try:
+                        mreviewer = User.objects.get(name=elename)
+                        ntask.reviewer.add(mreviewer)
+                    except:
+                        pass
+        return HttpResponse('上传完成')
+
+    else:
+        return HttpResponse('不允许的请求方式！')
+
+
+def taskGet(request, id=None, type=None):
+    if request.method == 'GET':
+        task_list = Task.objects.filter(project_id=id, task_type=type)
+        rdata = {}
+        # 添加任务信息到字典
+        for ele in task_list:
+            # 按大任务分类
+            if ele.belong_task not in rdata:
+                dict_ele = model_to_dict(ele)
+
+                adict = []
+                for a_ele in dict_ele['assignee']:
+                    adict.append(a_ele.id)
+                    print(a_ele.id)
+                dict_ele['assignee'] = adict
+                rdict = []
+                for r_ele in dict_ele['reviewer']:
+                    rdict.append(r_ele.id)
+                dict_ele['reviewer'] = rdict
+
+                dict_ele['status'] = ele.get_status_display()
+                dict_ele.update({'create_time': ele.create_time})
+                rdata[ele.belong_task] = [dict_ele]
+            else:
+                dict_ele = model_to_dict(ele)
+
+                adict = []
+                for a_ele in dict_ele['assignee']:
+                    adict.append(a_ele.id)
+                dict_ele['assignee'] = adict
+                rdict = []
+                for r_ele in dict_ele['reviewer']:
+                    rdict.append(r_ele.id)
+                dict_ele['reviewer'] = rdict
+
+                dict_ele['status'] = ele.get_status_display()
+                dict_ele.update({'create_time': ele.create_time})
+                rdata[ele.belong_task].append(dict_ele)
+        return JsonResponse(rdata)
+    # else:
+        return HttpResponse('不允许的请求方式！')
+
+
+def tasksChange(request, id=None):
+    if request.method == 'POST':
+        mtask = Task.objects.get(id=request.POST['id'])
+        if 'assignee' in request.POST:
+            mtask.assignee.clear()
+            if request.POST['assignee']:
+                adict = request.POST['assignee'].split(',')
+                for ele in adict:
+                    mtask.assignee.add(ele)
+        if 'reviewer' in request.POST:
+            mtask.reviewer.clear()
+            if request.POST['reviewer']:
+                rdict = request.POST['reviewer'].split(',')
+                for ele in rdict:
+                    mtask.reviewer.add(ele)
+        if 'status' in request.POST:
+            mtask.status = request.POST['status']
+            mtask.save()
+        return HttpResponse('成功！')
+
+    else:
+        return HttpResponse('不允许的请求方式！')

@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.utils import timezone
 # Create your models here.
+from datetime import datetime, timedelta
+
 
 
 class Project(models.Model):
@@ -219,12 +221,20 @@ class Task(models.Model):
     STATUS_DONE = 2
     STATUS_PASS = 3
     STATUS_NOT_PASS = 4
+    STATUS_SUSPEND = 5
     STATUS = (
         (STATUS_NOT_BEGIN, '未开始'),
         (STATUS_DOING, '正在进行'),
         (STATUS_DONE, '完成'),
         (STATUS_PASS, '通过'),
         (STATUS_NOT_PASS, '未通过'),
+        (STATUS_SUSPEND, '暂停'),
+    )
+    TYPE_COLLECTION = 1
+    TYPE_LABELING = 2
+    TYPES = (
+        (TYPE_COLLECTION, '采集任务'),
+        (TYPE_LABELING, '标注任务'),
     )
     id = models.AutoField(primary_key=True)
     project = models.ForeignKey(to='Project',
@@ -234,30 +244,65 @@ class Task(models.Model):
                                 on_delete=models.DO_NOTHING)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     task_name = models.CharField(max_length=20, unique=True, verbose_name='任务名称')
+    belong_task = models.CharField(max_length=20, verbose_name='所属大任务')
     task_link = models.URLField(verbose_name='任务链接')
-    begin_time = models.DateTimeField(verbose_name='开始时间')
-    done_time = models.DateTimeField(verbose_name='完成时间')
-    time_label = models.DateTimeField(verbose_name='时间标记点')
-    used_time = models.DateTimeField(verbose_name='任务用时')
-    total_time = models.DateTimeField(verbose_name='任务历时')
-    gross = models.IntegerField(verbose_name='此任务工作总量')
-    quantity_available = models.IntegerField(verbose_name='此任务有效工作量')
+    begin_time = models.DateTimeField(verbose_name='开始时间', blank=True, null=True)
+    done_time = models.DateTimeField(verbose_name='完成时间', blank=True, null=True)
+    time_label = models.DateTimeField(verbose_name='重启标签', blank=True, null=True)
+    used_time = models.CharField(max_length=20, verbose_name='任务用时', blank=True, null=True)
+    total_time = models.CharField(max_length=20, verbose_name='任务历时', blank=True, null=True)
+    gross = models.IntegerField(verbose_name='此任务工作总量', blank=True, null=True)
+    quantity_available = models.IntegerField(verbose_name='此任务有效工作量', blank=True, null=True)
     status = models.PositiveSmallIntegerField(choices=STATUS, verbose_name='状态')
-    number_of_reviews = models.PositiveSmallIntegerField(default=0, verbose_name='审核次数')
-    assignee = models.ForeignKey(to='User',
-                                 to_field='name',
-                                 related_name='assignee_task',
-                                 verbose_name='标注员',
-                                 on_delete=models.DO_NOTHING)
-    reviewer = models.ForeignKey(to='User',
-                                 to_field='name',
-                                 related_name='reviewer_task',
-                                 verbose_name='审核员',
-                                 on_delete=models.DO_NOTHING)
+    number_of_reviews = models.PositiveSmallIntegerField(default=0, verbose_name='审核次数', blank=True, null=True)
+    task_type = models.PositiveSmallIntegerField(choices=TYPES, verbose_name='任务类型')
+    # assignee = models.ForeignKey(to='User',
+    #                              to_field='name',
+    #                              related_name='assignee_task',
+    #                              verbose_name='标注员',
+    #                              on_delete=models.DO_NOTHING, blank=True, null=True)
+    assignee = models.ManyToManyField(to='User',
+                                      related_name='assignee_task',
+                                      verbose_name='标注员',
+                                      blank=True, null=True)
+    # reviewer = models.ForeignKey(to='User',
+    #                              to_field='name',
+    #                              related_name='reviewer_task',
+    #                              verbose_name='审核员',
+    #                              on_delete=models.DO_NOTHING, blank=True, null=True)
+    reviewer = models.ManyToManyField(to='User',
+                                      related_name='reviewer_task',
+                                      verbose_name='审核员',
+                                      blank=True, null=True)
     # suggestions = models.TextField(verbose_name='修改建议', help_text='填写此任务的修改建议，必须是markdown格式')
 
     class Mata:
         verbose_name = verbose_name_plural = '任务'
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.status == '1':
+            if not self.begin_time:
+                self.begin_time = timezone.now()
+            else:
+                self.time_label = timezone.now()
+        if self.status == '5':
+            if not self.used_time:
+                t = timezone.now() - self.begin_time
+                self.used_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
+            else:
+                t = timezone.now() - self.time_label
+                d = int(self.used_time.split('天')[0]) + t.days
+                h = int(self.used_time.split('天')[1].split('小时')[0]) + t.seconds / 3600
+                m = int(self.used_time.split('天')[1].split('小时')[0].split('分钟')[0]) + t.seconds % 3600 / 60
+                self.used_time = '%d天%d小时%d分钟' % (d, h, m)
+        if self.status == '2':
+            if not self.done_time:
+                self.done_time = timezone.now()
+                t = timezone.now() - self.begin_time
+                self.total_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
+
+        super().save(force_insert=False, force_update=False, using=None, update_fields=None)
 
 
 class Suggestion(models.Model):
