@@ -127,11 +127,10 @@
                                 project_id: a.state.data.project_id,
                                 project_name: t.project_name,
                                 status: t.status,
-                                end_time: t.end_time._d,
                                 background: a.state.bacDoc,
                                 total_demand: t.total_demand,
                                 total_describe: t.total_describe,
-                                deadline: t.deadline._d,
+                                deadline: t.deadline.format("YYYY-MM-DD HH:mm:ss"),
                                 labels: t.labels ? t.labels.toString() : null,
                                 users_found: t.users_found ? t.users_found.toString() : null,
                                 users_manager: t.users_manager ? t.users_manager.toString() : null,
@@ -161,7 +160,6 @@
                             var l = {
                                 project_name: t.project_name,
                                 status: t.status,
-                                end_time: t.end_time._d,
                                 background: a.state.bacDoc,
                                 total_demand: t.total_demand,
                                 total_describe: t.total_describe,
@@ -205,9 +203,8 @@
                         url: window.location.protocol + "//" + window.location.host + "/aidsp/api/project/" + e + "/?format=json",
                         method: "get"
                     }).then((function(e) {
-                        e.create_time && (e.create_time = p()(e.create_time, "YYYY-MM-DD")),
-                        e.end_time && (e.end_time = p()(e.end_time, "YYYY-MM-DD")),
-                        e.deadline && (e.deadline = p()(e.deadline, "YYYY-MM-DD")),
+                        e.create_time && (e.create_time = p()(e.create_time, "YYYY-MM-DD HH:mm:ss")),
+                        e.deadline && (e.deadline = p()(e.deadline, "YYYY-MM-DD HH:mm:ss")),
                         a.setState({
                             data: e
                         }),
@@ -490,17 +487,11 @@
                         label: "\u521b\u5efa\u65f6\u95f4"
                     },
                     t("create_time", {})(d.a.createElement(S.a, {
-                        disabled: !0
-                    }))), d.a.createElement(E.a.Item, {
-                        label: "\u7ed3\u675f\u65f6\u95f4"
-                    },
-                    t("end_time", {
-                        rules: [{
-                            type: "object",
-                            required: !0,
-                            message: "Please select time!"
-                        }]
-                    })(d.a.createElement(S.a, null))), d.a.createElement(E.a.Item, {
+                        disabled: !0,
+                        showTime: !0,
+                        format: "YYYY-MM-DD HH:mm:ss"
+                    })))
+                     , d.a.createElement(E.a.Item, {
                         label: "\u9700\u6c42\u603b\u91cf"
                     },
                     t("total_demand", {
@@ -522,7 +513,10 @@
                             required: !0,
                             message: "Please select time!"
                         }]
-                    })(d.a.createElement(S.a, null))), d.a.createElement(E.a.Item, {
+                    })(d.a.createElement(S.a,  {
+                    showTime: !0,
+                    format: "YYYY-MM-DD HH:mm:ss"
+                }))), d.a.createElement(E.a.Item, {
                         label: "\u6807\u7b7e",
                         onClick: this.tag_fetch
                     },

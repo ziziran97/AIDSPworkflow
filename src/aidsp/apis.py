@@ -1,10 +1,12 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from .models import Project, User, Label, Document, QA, Reply
-from .serializers import ProjectSerializer, ProjectDetailSerializer, UserSerializer, LabelSerializer, QASerializer, ProjectDisplaySerializer, ReplySerializer
+from .models import Project, User, Label, Document, QA, Reply, Dataset
+from .serializers import ProjectSerializer, ProjectDetailSerializer, UserSerializer, LabelSerializer, QASerializer, \
+    ProjectDisplaySerializer, ReplySerializer, DatasetSerializer, DatasetDetailSerializer
 from django.forms.models import model_to_dict
 from django.utils import timezone
 from django.db.models import Max
+import datetime
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -16,6 +18,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
     #     return super().list()
 
     def retrieve(self, request, *args, **kwargs):
+        if kwargs['pk'] == 'newproject':
+            ndata = {
+                'users_found': [request.user.id],
+                'users_manager': [request.user.id]
+            }
+            return Response(ndata)
+
         self.serializer_class = ProjectDetailSerializer
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -170,12 +179,38 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 data['project_id'] = '%s_01' % create_time
         else:
             data['project_id'] = '%s_01' % create_time
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        pdata = []
+        for ele in serializer.data:
+            pdict = dict(ele)
+            # 剩余时间
+            print(pdict['deadline'])
+            try:
+                td = datetime.datetime.strptime(pdict['deadline'], "%Y-%m-%dT%H:%M:%S") - timezone.now()
+            except:
+                td = datetime.datetime.strptime(pdict['deadline'], "%Y-%m-%dT%H:%M:%S.%f") - timezone.now()
+            if td.days > 0:
+                pdict['remaining_time'] = "%d天%d小时%d分钟" % (td.days, td.seconds/3600, (td.seconds/60) % 60)
+            else:
+                pdict['remaining_time'] = '已结束'
+            pdata.append(pdict)
+        # print(serializer.data)
+        # pdata.append({'remaining_time'})
+        return Response(pdata)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -290,3 +325,44 @@ class ProjectdisplayViewSet(viewsets.ModelViewSet):
             return Response(['成功？'])
         return Response(['do nothing'])
 
+
+class DatasetViewSet(viewsets.ModelViewSet):
+    serializer_class = DatasetSerializer
+    queryset = Dataset.objects.filter()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        pdata = dict(serializer.data)
+        partc = Project.objects.get(id=pdata['project_id'])
+        pdata['is_admin'] = request.user in partc.users_found.all() or request.user.name in partc.users_manager.all()
+        return Response(pdata)
+
+    def create(self, request, *args, **kwargs):
+        self.serializer_class = DatasetDetailSerializer
+        data = request.POST
+        _mutable = data._mutable
+        # 设置_mutable为True
+        data._mutable = True
+        for ele in data:
+            if len(ele) > 100:
+                ele = ele.replace(' ', '+')
+                data['img'] = data['img'] + ';' + ele
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        self.serializer_class = DatasetDetailSerializer
+        data = request.POST
+        _mutable = data._mutable
+        # 设置_mutable为True
+        data._mutable = True
+        for ele in data:
+            if len(ele) > 100:
+                ele = ele.replace(' ', '+')
+                data['img'] = data['img'] + ';' + ele
+
+        return super().update(request, *args, **kwargs)
