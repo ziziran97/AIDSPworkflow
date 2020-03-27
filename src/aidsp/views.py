@@ -58,13 +58,10 @@ def dataset_filedownload(request, filename=None):
 
 
 def aidspRedirect(request):
-    return HttpResponseRedirect('project')
+    return HttpResponseRedirect('personal')
 
 
 def taskPost(request):
-    # for chunk in request.FILES['csvFile'].chunks():
-    #     print(chunk)
-    #     print('11')
     if request.method == 'POST':
         line = request.FILES['csvFile'].readline()
         while line:
@@ -94,6 +91,38 @@ def taskPost(request):
     else:
         return HttpResponse('不允许的请求方式！')
 
+def get_dict(ele_model,rdata):
+    if ele_model.belong_task not in rdata:
+        dict_ele = model_to_dict(ele_model)
+
+        adict = []
+        for a_ele in dict_ele['assignee']:
+            adict.append(a_ele.id)
+        dict_ele['assignee'] = adict
+        rdict = []
+        for r_ele in dict_ele['reviewer']:
+            rdict.append(r_ele.id)
+        dict_ele['reviewer'] = rdict
+
+        dict_ele['status'] = ele_model.get_status_display()
+        dict_ele.update({'create_time': ele_model.create_time})
+        rdata[ele_model.belong_task] = [dict_ele]
+    else:
+        dict_ele = model_to_dict(ele_model)
+        adict = []
+        for a_ele in dict_ele['assignee']:
+            adict.append(a_ele.id)
+        dict_ele['assignee'] = adict
+        rdict = []
+        for r_ele in dict_ele['reviewer']:
+            rdict.append(r_ele.id)
+        dict_ele['reviewer'] = rdict
+
+        dict_ele['status'] = ele_model.get_status_display()
+        dict_ele.update({'create_time': ele_model.create_time})
+        rdata[ele_model.belong_task].append(dict_ele)
+    return rdata
+
 
 def taskGet(request, id=None, type=None):
     if request.method == 'GET':
@@ -102,39 +131,9 @@ def taskGet(request, id=None, type=None):
         # 添加任务信息到字典
         for ele in task_list:
             # 按大任务分类
-            if ele.belong_task not in rdata:
-                dict_ele = model_to_dict(ele)
-
-                adict = []
-                for a_ele in dict_ele['assignee']:
-                    adict.append(a_ele.id)
-                    print(a_ele.id)
-                dict_ele['assignee'] = adict
-                rdict = []
-                for r_ele in dict_ele['reviewer']:
-                    rdict.append(r_ele.id)
-                dict_ele['reviewer'] = rdict
-
-                dict_ele['status'] = ele.get_status_display()
-                dict_ele.update({'create_time': ele.create_time})
-                rdata[ele.belong_task] = [dict_ele]
-            else:
-                dict_ele = model_to_dict(ele)
-
-                adict = []
-                for a_ele in dict_ele['assignee']:
-                    adict.append(a_ele.id)
-                dict_ele['assignee'] = adict
-                rdict = []
-                for r_ele in dict_ele['reviewer']:
-                    rdict.append(r_ele.id)
-                dict_ele['reviewer'] = rdict
-
-                dict_ele['status'] = ele.get_status_display()
-                dict_ele.update({'create_time': ele.create_time})
-                rdata[ele.belong_task].append(dict_ele)
+            rdata = get_dict(ele, rdata)
         return JsonResponse(rdata)
-    # else:
+    else:
         return HttpResponse('不允许的请求方式！')
 
 
@@ -160,3 +159,45 @@ def tasksChange(request, id=None):
 
     else:
         return HttpResponse('不允许的请求方式！')
+
+
+def personalTasksGet(request):
+    rdata = {
+            0: {},
+            1: {},
+            2: {},
+            3: {},
+            4: {},
+            5: {},
+    }
+    rtask_list = Task.objects.filter(reviewer=request.user.id)
+    for ele in rtask_list:
+        if ele.status == 5:
+            rdata[1] = get_dict(ele, rdata[1])
+        else:
+            rdata[ele.status] = get_dict(ele, rdata[ele.status])
+        for bele in rdata[ele.status]:
+            for tele in rdata[ele.status][bele]:
+                tele.update({'is_admin': True})
+    adata = {
+        0: {},
+        1: {},
+        2: {},
+        3: {},
+        4: {},
+        5: {},
+    }
+    atask_list = Task.objects.filter(assignee=request.user.id)
+    for ele in atask_list:
+        if ele.status == 5:
+            adata[1] = get_dict(ele, adata[1])
+        else:
+            adata[ele.status] = get_dict(ele, adata[ele.status])
+        for bele in adata[ele.status]:
+            for tele in adata[ele.status][bele]:
+                tele.update({'is_admin': False})
+    pdata = {
+        'reviewer': rdata,
+        'assignee': adata,
+    }
+    return JsonResponse(pdata)
