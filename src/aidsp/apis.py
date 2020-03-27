@@ -360,6 +360,7 @@ class DatasetViewSet(viewsets.ModelViewSet):
         _mutable = data._mutable
         # 设置_mutable为True
         data._mutable = True
+        print(data)
         for ele in data:
             if len(ele) > 100:
                 ele = ele.replace(' ', '+')
