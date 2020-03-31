@@ -198,15 +198,21 @@ class ProjectViewSet(viewsets.ModelViewSet):
         for ele in serializer.data:
             pdict = dict(ele)
             # 剩余时间
-            print(pdict['deadline'])
-            try:
-                td = datetime.datetime.strptime(pdict['deadline'], "%Y-%m-%dT%H:%M:%S") - timezone.now()
-            except:
-                td = datetime.datetime.strptime(pdict['deadline'], "%Y-%m-%dT%H:%M:%S.%f") - timezone.now()
-            if td.days > 0:
-                pdict['remaining_time'] = "%d天%d小时%d分钟" % (td.days, td.seconds/3600, (td.seconds/60) % 60)
-            else:
+            if pdict['status'] == '完结':
                 pdict['remaining_time'] = '已结束'
+            else:
+                try:
+                    td = datetime.datetime.strptime(pdict['deadline'], "%Y-%m-%dT%H:%M:%S") - timezone.now()
+                except:
+                    td = datetime.datetime.strptime(pdict['deadline'], "%Y-%m-%dT%H:%M:%S.%f") - timezone.now()
+                if td.days >= 0:
+                    pdict['remaining_time'] = "%d天%d小时%d分钟" % (td.days, td.seconds/3600, (td.seconds/60) % 60)
+                else:
+                    try:
+                        td = timezone.now() - datetime.datetime.strptime(pdict['deadline'], "%Y-%m-%dT%H:%M:%S")
+                    except:
+                        td = timezone.now() - datetime.datetime.strptime(pdict['deadline'], "%Y-%m-%dT%H:%M:%S.%f")
+                    pdict['remaining_time'] = "-%d天%d小时%d分钟" % (td.days, td.seconds/3600, (td.seconds/60) % 60)
             pdata.append(pdict)
         # print(serializer.data)
         # pdata.append({'remaining_time'})
@@ -227,7 +233,7 @@ class QAViewSet(viewsets.ModelViewSet):
     serializer_class = QASerializer
     queryset = QA.objects.filter()
 
-    def create(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs ):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         qaobj = QA.objects.create(author=serializer.data['author'],
@@ -237,7 +243,6 @@ class QAViewSet(viewsets.ModelViewSet):
                                   documents=Document.objects.get(id=serializer.data['documents']),
                                   )
         qaobj.save()
-        print(qaobj.id)
         # self.perform_create(serializer)
         pdata = dict(serializer.data)
         pdata.update({'id': qaobj.id})
@@ -360,7 +365,6 @@ class DatasetViewSet(viewsets.ModelViewSet):
         _mutable = data._mutable
         # 设置_mutable为True
         data._mutable = True
-        print(data)
         for ele in data:
             if len(ele) > 100:
                 ele = ele.replace(' ', '+')

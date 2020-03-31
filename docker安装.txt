@@ -1,0 +1,35 @@
+# 若没装docker则安装docker
+sudo apt-get update
+sudo apt-get install -y \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  gnupg-agent \
+  software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository \
+  "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) \
+  stable"
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+# 启动dokcer
+sudo groupadd docker
+sudo usermod -aG docker $USER
+
+#若没装docker-compose则装docker-compose
+sudo python3 -m pip install docker-compose
+
+#构建docker
+cd src
+docker-compose build
+
+#开始运行
+docker-compose up -d
+
+#创建表和超级用户
+docker exec -it adisp_web bash -ic 'python3 manage.py migrate'
+docker exec -it adisp_web bash -ic 'python3 manage.py createsuperuser'
+
+#进入admin为超级用户完善姓名等信息
+http://127.0.0.1:8000/admin/aidsp/user/1/change/
