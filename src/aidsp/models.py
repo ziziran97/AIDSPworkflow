@@ -225,7 +225,7 @@ class Task(models.Model):
     STATUS = (
         (STATUS_NOT_BEGIN, '未开始'),
         (STATUS_DOING, '正在进行'),
-        (STATUS_DONE, '完成'),
+        (STATUS_DONE, '待审核'),
         (STATUS_PASS, '通过'),
         (STATUS_NOT_PASS, '未通过'),
         (STATUS_SUSPEND, '暂停'),
@@ -301,7 +301,8 @@ class Task(models.Model):
                 self.done_time = timezone.now()
                 t = timezone.now() - self.begin_time
                 self.total_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
-
+        if self.status == '3' or self.status == '4':
+            self.number_of_reviews = self.number_of_reviews + 1
         super().save(force_insert=False, force_update=False, using=None, update_fields=None)
 
 
