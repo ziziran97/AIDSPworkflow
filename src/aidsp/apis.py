@@ -224,7 +224,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 if eletask.status == 1:
                     for eleperson in eletask.assignee.all():
                         pdict['now_person'].append(eleperson.name)
-                        all_user.remove(eleperson.name)
+                        if eleperson.name in all_user:
+                            all_user.remove(eleperson.name)
             pdata.append(pdict)
         pdata.append({
             'id': '0',

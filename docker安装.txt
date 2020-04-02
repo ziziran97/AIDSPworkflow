@@ -28,8 +28,8 @@ docker-compose build
 docker-compose up -d
 
 #创建表和超级用户
-docker exec -it adisp_web bash -ic 'python3 manage.py migrate'
-docker exec -it adisp_web bash -ic 'python3 manage.py createsuperuser'
+docker exec -it aidsp_web bash -ic 'python3 manage.py migrate'
+docker exec -it aidsp_web bash -ic 'python3 manage.py createsuperuser'
 
 #进入admin为超级用户完善姓名等信息
 http://127.0.0.1:8000/admin/aidsp/user/1/change/
