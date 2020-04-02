@@ -91,6 +91,7 @@ def taskPost(request):
     else:
         return HttpResponse('不允许的请求方式！')
 
+# 模型转换字典
 def get_dict(ele_model,rdata):
     if ele_model.belong_task not in rdata:
         dict_ele = model_to_dict(ele_model)
@@ -176,8 +177,9 @@ def personalTasksGet(request):
             rdata[1] = get_dict(ele, rdata[1])
         else:
             rdata[ele.status] = get_dict(ele, rdata[ele.status])
-        for bele in rdata[ele.status]:
-            for tele in rdata[ele.status][bele]:
+    for sele in rdata:
+        for bele in rdata[sele]:
+            for tele in rdata[sele][bele]:
                 tele.update({'is_admin': True})
     adata = {
         0: {},
@@ -193,11 +195,33 @@ def personalTasksGet(request):
             adata[1] = get_dict(ele, adata[1])
         else:
             adata[ele.status] = get_dict(ele, adata[ele.status])
-        for bele in adata[ele.status]:
-            for tele in adata[ele.status][bele]:
+    for sele in adata:
+        for bele in adata[sele]:
+            for tele in adata[sele][bele]:
                 tele.update({'is_admin': False})
     pdata = {
         'reviewer': rdata,
         'assignee': adata,
     }
     return JsonResponse(pdata)
+
+
+def extraProjectPost(request):
+    if request.method == 'POST':
+        tproject = Project.objects.get(id = request.POST['id'])
+        for key in request.POST:
+            print(key)
+            if key == 'quantity_week':
+                tproject.quantity_week = request.POST['quantity_week']
+            if key == 'task_description':
+                tproject.task_description = request.POST['task_description']
+            if key == 'expected_time':
+                print('11111111111111111111111')
+                tproject.expected_time = request.POST['expected_time']
+
+        tproject.save()
+        return HttpResponse('aaa')
+
+    else:
+        return HttpResponse('不允许的请求方式！')
+

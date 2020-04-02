@@ -13,7 +13,8 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['id', 'project_id', 'project_name', 'status', 'create_time', 'deadline', 'labels', 'users_found', 'users_manager', 'users_attend']
+        fields = ['id', 'project_id', 'project_name', 'status', 'create_time', 'deadline', 'labels', 'users_found',
+                  'users_manager', 'users_attend', 'quantity_week', 'task_description', 'expected_time']
 
 
 class ProjectDetailSerializer(ProjectSerializer):
@@ -65,7 +66,8 @@ class ProjectDisplaySerializer(serializers.ModelSerializer):
         model = Project
         fields = ['project_id', 'project_name', 'status', 'create_time', 'end_time', 'background', 'total_demand',
                   'total_describe', 'deadline', 'labels', 'users_found', 'users_manager', 'users_attend',
-                  'requirement_documents', 'collection_documents', 'labeling_documents']
+                  'requirement_documents', 'collection_documents', 'labeling_documents', 'quantity_week',
+                  'task_description', 'expected_time']
 
 
 class DatasetSerializer(serializers.ModelSerializer):
