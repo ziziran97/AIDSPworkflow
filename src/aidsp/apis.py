@@ -195,9 +195,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         pdata = []
+        # 列出所有用户查找空闲的人
+        all_user = []
+        for eleuser in User.objects.filter():
+            all_user.append(eleuser.name)
         for ele in serializer.data:
             pdict = dict(ele)
-            # 剩余时间
+            # 计算剩余时间
             if pdict['status'] == '完结':
                 pdict['remaining_time'] = '已结束'
             else:
@@ -213,10 +217,31 @@ class ProjectViewSet(viewsets.ModelViewSet):
                     except:
                         td = timezone.now() - datetime.datetime.strptime(pdict['deadline'], "%Y-%m-%dT%H:%M:%S.%f")
                     pdict['remaining_time'] = "-%d天%d小时%d分钟" % (td.days, td.seconds/3600, (td.seconds/60) % 60)
+            # 查找当前任务正在进行的人
+            pdict['now_person'] = []
+            mproject = Project.objects.get(id=ele['id'])
+            for eletask in mproject.project_task.all():
+                if eletask.status == 1:
+                    for eleperson in eletask.assignee.all():
+                        pdict['now_person'].append(eleperson.name)
+                        all_user.remove(eleperson.name)
             pdata.append(pdict)
+        pdata.append({
+            'id': '0',
+            'project_id': '0',
+            'project_name': '空闲',
+            'now_person': all_user,
+            'status': '未开始准备中数据采集数据标注暂停完结',
+            "labels": [],
+            "users_found": [],
+            "users_manager": [],
+            "users_attend": [],
+
+        })
+
         # print(serializer.data)
         # pdata.append({'remaining_time'})
-        return Response(pdata)
+        return Response(pdata[::-1])
 
 
 class UserViewSet(viewsets.ModelViewSet):

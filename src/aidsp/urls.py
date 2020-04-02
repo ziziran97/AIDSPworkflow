@@ -2,7 +2,8 @@ from django.urls import path, include
 from . import views
 from django.contrib import admin
 from .views import project_index, project_detail, project_display, dataset_display, dataset_detail,\
-    dataset_fileupload, dataset_filedownload, aidspRedirect, taskPost, taskGet, tasksChange, personalTasksGet
+    dataset_fileupload, dataset_filedownload, aidspRedirect, taskPost, taskGet, tasksChange, personalTasksGet,\
+    extraProjectPost
 from .apis import ProjectViewSet, UserViewSet, LabelViewSet, QAViewSet, ProjectdisplayViewSet, ReplyViewSet, DatasetViewSet
 from rest_framework.routers import DefaultRouter
 
@@ -34,6 +35,7 @@ urlpatterns = [
     path('project/tasksget/<id>/<type>/', taskGet),
     path('project/tasks_change/<id>/', tasksChange),
     path('project/personal_tasks/', personalTasksGet),
+    path('project/extrapost/', extraProjectPost),
 
 ]
 

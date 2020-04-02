@@ -33,6 +33,9 @@ class Project(models.Model):
                                                  verbose_name='标注文档', related_name='标注文档',
                                               blank=True, null=True)
     # datasets = models.ManyToManyField(to='Dataset', related_name='project', verbose_name='数据集')
+    quantity_week = models.CharField(max_length=100, verbose_name='本周工作量', blank=True, null=True)
+    task_description = models.CharField(max_length=200, verbose_name='任务描述', blank=True, null=True)
+    expected_time = models.DateTimeField(verbose_name='预计完成时间', blank=True, null=True)
     labels = models.ManyToManyField(to='Label',
                                     related_name='labels',
                                     verbose_name='标签',
@@ -286,6 +289,14 @@ class Task(models.Model):
                 self.begin_time = timezone.now()
             else:
                 self.time_label = timezone.now()
+            # 当一个任务开始时暂停其他任务
+            for eleAssignee in self.assignee.all():
+                allTask = Task.objects.filter(assignee=eleAssignee)
+                for eleTask in allTask:
+                    if eleTask.status == 1:
+                        eleTask.status = 5
+                        eleTask.save()
+
         if self.status == '5':
             if not self.used_time:
                 t = timezone.now() - self.begin_time
