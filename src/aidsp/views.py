@@ -156,6 +156,9 @@ def tasksChange(request, id=None):
         if 'status' in request.POST:
             mtask.status = request.POST['status']
             mtask.save()
+        if 'quantity_available' in request.POST:
+            mtask.quantity_available = request.POST['quantity_available']
+            mtask.save()
         return HttpResponse('成功！')
 
     else:

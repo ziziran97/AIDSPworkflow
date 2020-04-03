@@ -52,12 +52,15 @@ class Project(models.Model):
                                           related_name='users_attend',
                                           verbose_name='参与人',
                                           blank=True, null=True)
+
     def __str__(self):
         return self.project_id + '_' + self.project_name
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if self.status == '完结':
+        # 判断状态是否改变
+        oldP = Project.objects.get(id=self.id)
+        if oldP.status != self.status == '完结':
             self.end_time = timezone.now()
 
         super().save(force_insert=False, force_update=False, using=None,
@@ -284,7 +287,9 @@ class Task(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        if self.status == '1':
+        oldT = Task.objects.get(id=self.id)
+        # 当变成正在进行
+        if oldT.status != int(self.status) == 1:
             if not self.begin_time:
                 self.begin_time = timezone.now()
             else:
@@ -297,22 +302,38 @@ class Task(models.Model):
                         eleTask.status = 5
                         eleTask.save()
 
-        if self.status == '5':
+        # 当变成暂停
+        if oldT.status != int(self.status) == 5:
+            # 计算工作用时
             if not self.used_time:
                 t = timezone.now() - self.begin_time
                 self.used_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
             else:
                 t = timezone.now() - self.time_label
+                old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
                 d = int(self.used_time.split('天')[0]) + t.days
-                h = int(self.used_time.split('天')[1].split('小时')[0]) + t.seconds / 3600
-                m = int(self.used_time.split('天')[1].split('小时')[0].split('分钟')[0]) + t.seconds % 3600 / 60
-                self.used_time = '%d天%d小时%d分钟' % (d, h, m)
-        if self.status == '2':
+                new_used_time = t.seconds + old_used_time
+                self.used_time = '%d天%d小时%d分钟' % (d, new_used_time/3600, new_used_time % 3600 / 60)
+
+        # 当变成待审核
+        if oldT.status != int(self.status) == 2 and oldT.status != 4:
+            # 计算工作用时
+            if not self.used_time:
+                t = timezone.now() - self.begin_time
+                self.used_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
+            else:
+                t = timezone.now() - self.time_label
+                old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
+                d = int(self.used_time.split('天')[0]) + t.days
+                new_used_time = t.seconds + old_used_time
+                self.used_time = '%d天%d小时%d分钟' % (d, new_used_time/3600, new_used_time % 3600 / 60)
+            # 计算工作历时
             if not self.done_time:
                 self.done_time = timezone.now()
                 t = timezone.now() - self.begin_time
                 self.total_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
-        if self.status == '3' or self.status == '4':
+        # 当通过和不通过
+        if oldT.status != int(self.status) == 3 or oldT.status != int(self.status) == 4:
             self.number_of_reviews = self.number_of_reviews + 1
         super().save(force_insert=False, force_update=False, using=None, update_fields=None)
 
