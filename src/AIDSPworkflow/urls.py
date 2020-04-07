@@ -19,9 +19,7 @@ from .views import Login, indexRedirect
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('aidsp/admin/', admin.site.urls),
     path('aidsp/', include('aidsp.urls')),
-    path('login/', Login),
-    path('', indexRedirect),
-
+    path('aidsp/login/', Login),
 ]
