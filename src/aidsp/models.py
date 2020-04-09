@@ -353,3 +353,24 @@ class Suggestion(models.Model):
 
     class Mata:
         verbose_name = verbose_name_plural = '修改建议'
+
+
+class Img(models.Model):
+    STATUS_RETAIN = 0
+    STATUS_DELETE = 1
+    STATUS = (
+        (STATUS_RETAIN, '保留'),
+        (STATUS_DELETE, '删除'),
+    )
+    id = models.AutoField(primary_key=True)
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    url = models.CharField(max_length=100, verbose_name='链接')
+    assignor = models.ForeignKey(to='User',
+                               to_field='name',
+                               verbose_name='姓名',
+                               on_delete=models.DO_NOTHING, blank=True, null=True)
+    status = models.PositiveSmallIntegerField(choices=STATUS, verbose_name='状态', blank=True, null=True)
+
+
+    class Mata:
+        verbose_name = verbose_name_plural = '图片库'

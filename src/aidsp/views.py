@@ -1,12 +1,14 @@
 from django.db.models import QuerySet
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import render, HttpResponse, HttpResponseRedirect
-from .models import Project, Task, User
+from .models import Project, Task, User, Img
 # Create your views here.
 import os
 from django.conf import settings
 from django.forms.models import model_to_dict
 from django.db.utils import IntegrityError
+from django.db.models import Q
+from django.core import serializers
 
 
 def project_index(request,page=None):
@@ -228,3 +230,20 @@ def extraProjectPost(request):
     else:
         return HttpResponse('不允许的请求方式！')
 
+
+def getImg(request):
+    left = Img.objects.filter(assignor=request.user)
+    if left:
+        value = [i[0] for i in left.values_list('url')]
+    else:
+        new = Img.objects.filter(~Q(assignor=''))[:100]
+        Img.objects.filter(id__in=new).update(assignor=request.user)
+        value = [i[0] for i in new.values_list('url')]
+    return JsonResponse(value, safe=False)
+
+
+def getMoreImg(request):
+    new = Img.objects.filter(~Q(assignor=''))[:100]
+    Img.objects.filter(id__in=new).update(assignor=request.user)
+    value = [i[0] for i in new.values_list('url')]
+    return JsonResponse(value, safe=False)
