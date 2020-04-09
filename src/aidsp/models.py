@@ -287,54 +287,55 @@ class Task(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
-        oldT = Task.objects.get(id=self.id)
-        # 当变成正在进行
-        if oldT.status != int(self.status) == 1:
-            if not self.begin_time:
-                self.begin_time = timezone.now()
-            else:
-                self.time_label = timezone.now()
-            # 当一个任务开始时暂停其他任务
-            for eleAssignee in self.assignee.all():
-                allTask = Task.objects.filter(assignee=eleAssignee)
-                for eleTask in allTask:
-                    if eleTask.status == 1:
-                        eleTask.status = 5
-                        eleTask.save()
+        if self.id:
+            oldT = Task.objects.get(id=self.id)
+            # 当变成正在进行
+            if oldT.status != int(self.status) == 1:
+                if not self.begin_time:
+                    self.begin_time = timezone.now()
+                else:
+                    self.time_label = timezone.now()
+                # 当一个任务开始时暂停其他任务
+                for eleAssignee in self.assignee.all():
+                    allTask = Task.objects.filter(assignee=eleAssignee)
+                    for eleTask in allTask:
+                        if eleTask.status == 1:
+                            eleTask.status = 5
+                            eleTask.save()
 
-        # 当变成暂停
-        if oldT.status != int(self.status) == 5:
-            # 计算工作用时
-            if not self.used_time:
-                t = timezone.now() - self.begin_time
-                self.used_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
-            else:
-                t = timezone.now() - self.time_label
-                old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
-                d = int(self.used_time.split('天')[0]) + t.days
-                new_used_time = t.seconds + old_used_time
-                self.used_time = '%d天%d小时%d分钟' % (d, new_used_time/3600, new_used_time % 3600 / 60)
+            # 当变成暂停
+            if oldT.status != int(self.status) == 5:
+                # 计算工作用时
+                if not self.used_time:
+                    t = timezone.now() - self.begin_time
+                    self.used_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
+                else:
+                    t = timezone.now() - self.time_label
+                    old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
+                    d = int(self.used_time.split('天')[0]) + t.days
+                    new_used_time = t.seconds + old_used_time
+                    self.used_time = '%d天%d小时%d分钟' % (d, new_used_time/3600, new_used_time % 3600 / 60)
 
-        # 当变成待审核
-        if oldT.status != int(self.status) == 2 and oldT.status != 4:
-            # 计算工作用时
-            if not self.used_time:
-                t = timezone.now() - self.begin_time
-                self.used_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
-            else:
-                t = timezone.now() - self.time_label
-                old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
-                d = int(self.used_time.split('天')[0]) + t.days
-                new_used_time = t.seconds + old_used_time
-                self.used_time = '%d天%d小时%d分钟' % (d, new_used_time/3600, new_used_time % 3600 / 60)
-            # 计算工作历时
-            if not self.done_time:
-                self.done_time = timezone.now()
-                t = timezone.now() - self.begin_time
-                self.total_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
-        # 当通过和不通过
-        if oldT.status != int(self.status) == 3 or oldT.status != int(self.status) == 4:
-            self.number_of_reviews = self.number_of_reviews + 1
+            # 当变成待审核
+            if oldT.status != int(self.status) == 2 and oldT.status != 4:
+                # 计算工作用时
+                if not self.used_time:
+                    t = timezone.now() - self.begin_time
+                    self.used_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
+                else:
+                    t = timezone.now() - self.time_label
+                    old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
+                    d = int(self.used_time.split('天')[0]) + t.days
+                    new_used_time = t.seconds + old_used_time
+                    self.used_time = '%d天%d小时%d分钟' % (d, new_used_time/3600, new_used_time % 3600 / 60)
+                # 计算工作历时
+                if not self.done_time:
+                    self.done_time = timezone.now()
+                    t = timezone.now() - self.begin_time
+                    self.total_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
+            # 当通过和不通过
+            if oldT.status != int(self.status) == 3 or oldT.status != int(self.status) == 4:
+                self.number_of_reviews = self.number_of_reviews + 1
         super().save(force_insert=False, force_update=False, using=None, update_fields=None)
 
 
@@ -352,3 +353,24 @@ class Suggestion(models.Model):
 
     class Mata:
         verbose_name = verbose_name_plural = '修改建议'
+
+
+class Img(models.Model):
+    STATUS_RETAIN = 0
+    STATUS_DELETE = 1
+    STATUS = (
+        (STATUS_RETAIN, '保留'),
+        (STATUS_DELETE, '删除'),
+    )
+    id = models.AutoField(primary_key=True)
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    url = models.CharField(max_length=100, verbose_name='链接')
+    assignor = models.ForeignKey(to='User',
+                               to_field='name',
+                               verbose_name='姓名',
+                               on_delete=models.DO_NOTHING, blank=True, null=True)
+    status = models.PositiveSmallIntegerField(choices=STATUS, verbose_name='状态', blank=True, null=True)
+
+
+    class Mata:
+        verbose_name = verbose_name_plural = '图片库'
