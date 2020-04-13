@@ -9,7 +9,7 @@ from django.forms.models import model_to_dict
 from django.db.utils import IntegrityError
 from django.db.models import Q
 from django.core import serializers
-
+import json
 
 def project_index(request,page=None):
     return render(request, 'index.html')
@@ -213,37 +213,43 @@ def personalTasksGet(request):
 
 def extraProjectPost(request):
     if request.method == 'POST':
-        tproject = Project.objects.get(id = request.POST['id'])
+        tproject = Project.objects.get(id=request.POST['id'])
         for key in request.POST:
-            print(key)
             if key == 'quantity_week':
                 tproject.quantity_week = request.POST['quantity_week']
             if key == 'task_description':
                 tproject.task_description = request.POST['task_description']
             if key == 'expected_time':
-                print('11111111111111111111111')
                 tproject.expected_time = request.POST['expected_time']
-
         tproject.save()
-        return HttpResponse('aaa')
+        return HttpResponse('ok')
 
     else:
         return HttpResponse('不允许的请求方式！')
 
 
 def getImg(request):
-    left = Img.objects.filter(assignor=request.user)
-    if left:
-        value = [i[0] for i in left.values_list('url')]
-    else:
-        new = Img.objects.filter(~Q(assignor=''))[:100]
+    if request.method == 'POST':
+        new = Img.objects.filter(assignor=None)[:int(request.POST['count'])]
+        value = [{'id': i[0], 'url': i[1], 'status': i[2]}for i in new.values_list('id', 'url', 'status')]
         Img.objects.filter(id__in=new).update(assignor=request.user)
-        value = [i[0] for i in new.values_list('url')]
-    return JsonResponse(value, safe=False)
+        return JsonResponse(value, safe=False)
+
+    else:
+        return HttpResponse('不允许的请求方式！')
 
 
-def getMoreImg(request):
-    new = Img.objects.filter(~Q(assignor=''))[:100]
-    Img.objects.filter(id__in=new).update(assignor=request.user)
-    value = [i[0] for i in new.values_list('url')]
+def postImg(request):
+    if request.method == 'POST':
+        for ele in json.loads(request.body):
+            print(ele['status'])
+        return HttpResponse('xx！')
+
+    else:
+        return HttpResponse('不允许的请求方式！')
+
+
+def finishImg(request):
+    left = Img.objects.filter(~Q(status=None), assignor=request.user)
+    value = [{'id': i[0], 'url': i[1], 'status': i[2]} for i in left.values_list('id', 'url', 'status')]
     return JsonResponse(value, safe=False)
