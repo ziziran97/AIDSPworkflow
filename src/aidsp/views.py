@@ -10,7 +10,7 @@ from django.db.utils import IntegrityError
 from django.db.models import Q
 from django.core import serializers
 import json
-
+from itertools import chain
 def project_index(request,page=None):
     return render(request, 'index.html')
 
@@ -230,6 +230,8 @@ def extraProjectPost(request):
 
 def getImg(request):
     if request.method == 'POST':
+        noneImg = Img.objects.filter(assignor=request.user,status=None)
+        noneImg.update(assignor=None)
         new = Img.objects.filter(assignor=None)[:int(request.POST['count'])]
         value = [{'id': i[0], 'url': i[1], 'status': i[2]}for i in new.values_list('id', 'url', 'status')]
         Img.objects.filter(id__in=new).update(assignor=request.user)
@@ -241,9 +243,20 @@ def getImg(request):
 
 def postImg(request):
     if request.method == 'POST':
+        rightImg = Img.objects.none()
+        errorImg = Img.objects.none()
+        noneImg = Img.objects.none()
         for ele in json.loads(request.body):
-            print(ele['status'])
-        return HttpResponse('xx！')
+            if ele['status'] == 1:
+                errorImg = errorImg | Img.objects.filter(id=ele['id'])
+            if ele['status'] == 0:
+                rightImg = rightImg | Img.objects.filter(id=ele['id'])
+            if ele['status'] is None:
+                noneImg = noneImg | Img.objects.filter(id=ele['id'])
+        rightImg.update(status=0)
+        errorImg.update(status=1)
+        noneImg.update(assignor=None)
+        return HttpResponse('更新成功！')
 
     else:
         return HttpResponse('不允许的请求方式！')
