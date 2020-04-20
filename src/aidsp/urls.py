@@ -3,10 +3,9 @@ from . import views
 from django.contrib import admin
 from .views import project_index, project_detail, project_display, dataset_display, dataset_detail,\
     dataset_fileupload, dataset_filedownload, aidspRedirect, taskPost, taskGet, tasksChange, personalTasksGet,\
-    extraProjectPost, getImg, postImg, finishImg
+    extraProjectPost, getImg, postImg, finishImg, showFileList, tasksUpload, pic_screen, taskCopy, getImgTask
 from .apis import ProjectViewSet, UserViewSet, LabelViewSet, QAViewSet, ProjectdisplayViewSet, ReplyViewSet, DatasetViewSet
 from rest_framework.routers import DefaultRouter
-
 
 router = DefaultRouter()
 router.register('project', ProjectViewSet, basename='api-project')
@@ -22,7 +21,7 @@ urlpatterns = [
     path('project', project_index),
     path('dataset', project_index),
     path('personal', project_index),
-    path('picscreen', project_index),
+    path('screen/<task_name>', pic_screen),
     path('detail/<id>/', project_detail),
     path('api/', include((router.urls, str(router)), namespace='api')),
     path('newproject/', project_detail),
@@ -37,9 +36,12 @@ urlpatterns = [
     path('project/tasks_change/<id>/', tasksChange),
     path('project/personal_tasks/', personalTasksGet),
     path('project/extrapost/', extraProjectPost),
-    path('project/imgget/', getImg),
+    path('project/imgget/<task_name>/', getImg),
     path('project/imgpost/', postImg),
-    path('project/imgfinish/', finishImg),
+    path('project/imgfinish/<task_name>/', finishImg),
+    path('filelist/', showFileList),
+    path('project/newtasksupload/', tasksUpload),
+    path('project/newcopytask/', taskCopy),
+    path('project/imgtaskget/', getImgTask),
 
 ]
-

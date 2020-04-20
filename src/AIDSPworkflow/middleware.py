@@ -17,6 +17,7 @@ class LoginCheckMiddleware(MiddlewareMixin):
                 # 主页未登录
                 return HttpResponseRedirect('/aidsp/login/')
 
+
 class DisableCSRFCheck(MiddlewareMixin):
     def process_request(self, request):
         setattr(request, '_dont_enforce_csrf_checks', True)
