@@ -66,7 +66,6 @@ class Project(models.Model):
         super().save(force_insert=False, force_update=False, using=None,
              update_fields=None)
 
-
     class Mata:
         verbose_name = verbose_name_plural = '项目'
         ordering = 'id'
@@ -282,6 +281,9 @@ class Task(models.Model):
                                       blank=True, null=True)
     # suggestions = models.TextField(verbose_name='修改建议', help_text='填写此任务的修改建议，必须是markdown格式')
 
+    def __str__(self):
+        return self.task_name
+
     class Mata:
         verbose_name = verbose_name_plural = '任务'
 
@@ -314,6 +316,9 @@ class Task(models.Model):
                     old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
                     d = int(self.used_time.split('天')[0]) + t.days
                     new_used_time = t.seconds + old_used_time
+                    if new_used_time > 24 * 3600:
+                        new_used_time = new_used_time - 24 * 3600
+                        d = d + 1
                     self.used_time = '%d天%d小时%d分钟' % (d, new_used_time/3600, new_used_time % 3600 / 60)
 
             # 当变成待审核
@@ -370,7 +375,10 @@ class Img(models.Model):
                                verbose_name='姓名',
                                on_delete=models.DO_NOTHING, blank=True, null=True)
     status = models.PositiveSmallIntegerField(choices=STATUS, verbose_name='状态', blank=True, null=True)
-
+    tasks = models.ForeignKey(to='Task',
+                              to_field='task_name',
+                              verbose_name='所属任务',
+                               on_delete=models.CASCADE)
 
     class Mata:
         verbose_name = verbose_name_plural = '图片库'

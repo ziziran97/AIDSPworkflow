@@ -1,0 +1,3 @@
+在/src目录下创建user.csv文件，每行填写一个用户，顺序为 姓名 手机号 职务（0：算法工程师，1：生产管理员，2：标注员） 用户名 密码
+执行命令
+docker exec -it aidsp_web bash -ic 'python3 manage.py user_add'
