@@ -7,4 +7,5 @@ __pycache__/
 *.swp
 *.csv
 *.jpg
-src/aidsp/static/imgFile/*
+imgFile
+/src/aidsp/static/imgFile/*
