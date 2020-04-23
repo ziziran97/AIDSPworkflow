@@ -43,5 +43,4 @@ urlpatterns = [
     path('project/newtasksupload/', tasksUpload),
     path('project/newcopytask/', taskCopy),
     path('project/imgtaskget/', getImgTask),
-
 ]

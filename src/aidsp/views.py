@@ -10,7 +10,7 @@ import json
 from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
-
+from .cli.cvat import create_tasks
 
 def project_index(request,page=None):
     return render(request, 'index.html')
@@ -66,33 +66,51 @@ def aidspRedirect(request):
     return HttpResponseRedirect('personal')
 
 
-# 提交任务
+# 任务分配
 def taskPost(request):
     if request.method == 'POST':
         line = request.FILES['csvFile'].readline()
+        errorflog = False
+        errortask = []
+        erroruser = []
+        # 读取csv
         while line:
             linedict = line.decode("gbk").replace('\r', '').replace('\n', '').split(',')
             line = request.FILES['csvFile'].readline()
-            mpid = Project.objects.get(id=request.POST['project_id'])
-            ntask = Task.objects.create(project=mpid, task_name=linedict[0], task_link=linedict[1],
-                                        gross=linedict[2], status=0, belong_task=request.POST['taskName'],
-                                        task_type=request.POST['task_type'])
-            if len(linedict) > 3:
-                for elename in linedict[3].split(' '):
-                    try:
-                        massignee = User.objects.get(name=elename)
-                        ntask.assignee.add(massignee)
+            if linedict[0]:
+                try:
+                    ntask = Task.objects.get(task_name=linedict[0])
+                    # 添加人员
+                    if len(linedict) > 1:
+                        for elename in linedict[1].split(' '):
+                            if elename:
+                                try:
+                                    massignee = User.objects.get(name=elename)
+                                    ntask.assignee.add(massignee)
+                                except Exception as e:
+                                    print(e)
+                                    erroruser.append(elename)
+                                    errorflog = True
 
-                    except:
-                        pass
-            if len(linedict) > 4:
-                for elename in linedict[4].split(' '):
-                    try:
-                        mreviewer = User.objects.get(name=elename)
-                        ntask.reviewer.add(mreviewer)
-                    except:
-                        pass
-        return HttpResponse('上传完成')
+                    if len(linedict) > 2:
+                        for elename in linedict[2].split(' '):
+                            if elename:
+                                try:
+                                    mreviewer = User.objects.get(name=elename)
+                                    ntask.reviewer.add(mreviewer)
+                                except Exception as e:
+                                    print(e)
+                                    erroruser.append(elename)
+                                    errorflog = True
+
+                except Exception as e:
+                    print(e)
+                    errortask.append(linedict[0])
+                    errorflog = True
+        if errorflog:
+            return HttpResponse('任务名%s不存在\n用户%s不存在' % (errortask, erroruser), status=203)
+        else:
+            return HttpResponse('上传完成')
 
     else:
         return HttpResponse('不允许的请求方式！')
@@ -316,8 +334,13 @@ def showFileList(request):
 def tasksUpload(request):
 
     if request.method == 'POST':
+        # 筛选任务
         if request.POST['type'] == 'screen':
             taskdir = os.path.join(settings.IMGFILEDIR, request.POST['task'])
+            for file in os.listdir(taskdir):
+                if os.path.isdir(os.path.join(taskdir, file)):
+                    return HttpResponse('筛选任务的文件夹中不能包含文件夹', status=500)
+
             mpid = Project.objects.get(id=request.POST['project'])
             # 创建任务
             ntask = Task.objects.create(project=mpid, task_name=request.POST['task'], task_link='/aidsp/screen/'+request.POST['task'],
@@ -330,6 +353,31 @@ def tasksUpload(request):
                 img_list.append(img)
             Img.objects.bulk_create(img_list)
             return HttpResponse('添加完成')
+        #标注任务
+        elif request.POST['type'] == 'tagging':
+            auth = 'cvat:cvat_Cpv17d0Da2'
+            # create_tasks_files()
+            task_name = request.POST['task']
+            imgdir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
+            cli_path = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/cli/cli.py')
+            taskdir = os.path.join(imgdir, task_name)
+            for file in os.listdir(taskdir):
+                if file.endswith('.jpg'):
+                    return HttpResponse('标注任务的文件夹中不能包含图片', status=500)
+            value = create_tasks(auth, task_name, imgdir, cli_path)
+            for ele in value:
+                task_link = ''
+                for job in ele['segments']:
+                    if task_link != '':
+                        task_link = task_link + ' '
+                    task_link = task_link + 'https://218.207.208.20:8080/?id=%s' % job['jobs'][0]['id']
+                mpid = Project.objects.get(id=request.POST['project'])
+                Task.objects.create(project=mpid, task_name=ele['name'],
+                                    task_link=task_link,
+                                    gross=ele['size'], status=0, belong_task=request.POST['task'],
+                                    task_type=request.POST['task_type'])
+            return HttpResponse('添加完成！')
+
     return HttpResponse('不允许的请求方式！')
 
 
