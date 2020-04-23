@@ -319,12 +319,13 @@ def showFileList(request):
                     'selectable': True if dir == os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile') and (file not in task_list) else False
                 })
             else:
-                dirlist.append({
-                    'title': file,
-                    'key': file,
-                    'isLeaf': True,
-                    'selectable': False,
-                })
+                if file != '.gitignore':
+                    dirlist.append({
+                        'title': file,
+                        'key': file,
+                        'isLeaf': True,
+                        'selectable': False,
+                    })
         return dirlist
     img_list = appendFile(dir)
     return JsonResponse(img_list, safe=False)
