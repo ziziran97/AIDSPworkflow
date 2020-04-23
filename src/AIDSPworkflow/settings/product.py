@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'nk5&hv!8(s_7bvvw=**hc-xd4k)4u%iryt1n7*ztpv11d-&b43'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*',]
 
@@ -141,7 +141,7 @@ TIME_ZONE = 'Asia/Shanghai'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
-STATIC_URL = 'aidsp/static/'
+STATIC_URL = '/aidsp/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]

@@ -6,9 +6,9 @@ from django.utils.deprecation import MiddlewareMixin
 class LoginCheckMiddleware(MiddlewareMixin):
     def process_request(self, request):  
         # | 分隔要匹配的多个url，从左到右匹配，有匹配就返回匹配值，否则返回None。
-        if request.path != '/aidsp/login/':
+        print(request.path)
+        if request.path != '/aidsp/login/' and not request.path.startswith('/aidsp/admin/') and not request.path.startswith('/aidsp/static/'):
             pattern = r'^(/$|/aidsp)'
-
             # 如果 request.path 的开始位置能够找到这个正则样式的任意个匹配，就返回一个相应的匹配对象。
             # 如果不匹配，就返回None
             match = re.search(pattern, request.path)

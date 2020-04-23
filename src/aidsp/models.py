@@ -59,10 +59,12 @@ class Project(models.Model):
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         # 判断状态是否改变
-        oldP = Project.objects.get(id=self.id)
-        if oldP.status != self.status == '完结':
-            self.end_time = timezone.now()
-
+        try:
+            oldP = Project.objects.get(id=self.id)
+            if oldP.status != self.status == '完结':
+                self.end_time = timezone.now()
+        except:
+            pass
         super().save(force_insert=False, force_update=False, using=None,
              update_fields=None)
 
