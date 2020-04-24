@@ -6,7 +6,7 @@ server {
 
 server {
     listen       80;
-    server_name  localhost 192.168.206.136 127.* 172.*;
+    server_name  localhost 192.* 127.* 218.*;
     gzip on;
     gzip_buffers 32 4K;
     gzip_comp_level 6;
