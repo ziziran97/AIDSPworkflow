@@ -250,8 +250,8 @@ class Task(models.Model):
                                 verbose_name='所属项目',
                                 on_delete=models.DO_NOTHING)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    task_name = models.CharField(max_length=20, unique=True, verbose_name='任务名称')
-    belong_task = models.CharField(max_length=20, verbose_name='所属大任务')
+    task_name = models.CharField(max_length=100, unique=True, verbose_name='任务名称')
+    belong_task = models.CharField(max_length=100, verbose_name='所属大任务')
     task_link = models.URLField(verbose_name='任务链接')
     begin_time = models.DateTimeField(verbose_name='开始时间', blank=True, null=True)
     done_time = models.DateTimeField(verbose_name='完成时间', blank=True, null=True)
