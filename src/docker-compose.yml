@@ -24,11 +24,13 @@ services:
     container_name: aidsp_proxy
     image: nginx:stable-alpine
     restart: always
+    environment:
+      AIDSP_HOST: localhost
     depends_on:
       - web
     ports:
       - "8000:80"
     volumes:
       - ./aidsp_proxy/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./aidsp_proxy/conf.d/aidsp.conf.template:/etc/nginx/conf.d/cvat.conf.template:ro
-    command: /bin/sh -c "envsubst '$$CVAT_HOST' < /etc/nginx/conf.d/cvat.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+      - ./aidsp_proxy/conf.d/aidsp.conf.template:/etc/nginx/conf.d/aidsp.conf.template:ro
+    command: /bin/sh -c "envsubst '$$AIDSP_HOST' < /etc/nginx/conf.d/aidsp.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
