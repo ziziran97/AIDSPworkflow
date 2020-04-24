@@ -7,6 +7,7 @@ import os
 from django.forms.models import model_to_dict
 from django.db.models import Q
 import json
+import urllib
 from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
@@ -407,7 +408,7 @@ def taskCopy(request):
 # 获取图片任务信息
 def getImgTask(request):
     if request.method == 'POST':
-        mtask = request.user.assignee_task.filter(belong_task=request.POST['belong_task']).first()
+        mtask = request.user.assignee_task.filter(belong_task=urllib.parse.unquote(request.POST['belong_task'])).first()
         value = model_to_dict(mtask)
         value.pop('assignee')
         value.pop('reviewer')
