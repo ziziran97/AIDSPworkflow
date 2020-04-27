@@ -19,6 +19,7 @@ server {
         proxy_pass_header       X-CSRFToken;
         proxy_set_header        Host $http_host;
         proxy_pass_header       Set-Cookie;
+        proxy_read_timeout      36000;
     }
 
 }

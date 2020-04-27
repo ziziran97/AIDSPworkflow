@@ -39,19 +39,19 @@ class Project(models.Model):
     labels = models.ManyToManyField(to='Label',
                                     related_name='labels',
                                     verbose_name='标签',
-                                    blank=True, null=True)
+                                    blank=True)
     users_found = models.ManyToManyField(to='User',
                                          related_name='users_found',
                                          verbose_name='创建人',
-                                         blank=True, null=True)
+                                         blank=True)
     users_manager = models.ManyToManyField(to='User',
                                            related_name='users_manager',
                                            verbose_name='管理人',
-                                           blank=True, null=True)
+                                           blank=True)
     users_attend = models.ManyToManyField(to='User',
                                           related_name='users_attend',
                                           verbose_name='参与人',
-                                          blank=True, null=True)
+                                          blank=True)
 
     def __str__(self):
         return self.project_id + '_' + self.project_name
@@ -252,7 +252,7 @@ class Task(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     task_name = models.CharField(max_length=100, unique=True, verbose_name='任务名称')
     belong_task = models.CharField(max_length=100, verbose_name='所属大任务')
-    task_link = models.URLField(verbose_name='任务链接')
+    task_link = models.TextField(verbose_name='任务链接')
     begin_time = models.DateTimeField(verbose_name='开始时间', blank=True, null=True)
     done_time = models.DateTimeField(verbose_name='完成时间', blank=True, null=True)
     time_label = models.DateTimeField(verbose_name='重启标签', blank=True, null=True)
@@ -271,7 +271,7 @@ class Task(models.Model):
     assignee = models.ManyToManyField(to='User',
                                       related_name='assignee_task',
                                       verbose_name='标注员',
-                                      blank=True, null=True)
+                                      blank=True)
     # reviewer = models.ForeignKey(to='User',
     #                              to_field='name',
     #                              related_name='reviewer_task',
@@ -280,7 +280,7 @@ class Task(models.Model):
     reviewer = models.ManyToManyField(to='User',
                                       related_name='reviewer_task',
                                       verbose_name='审核员',
-                                      blank=True, null=True)
+                                      blank=True)
     # suggestions = models.TextField(verbose_name='修改建议', help_text='填写此任务的修改建议，必须是markdown格式')
 
     def __str__(self):

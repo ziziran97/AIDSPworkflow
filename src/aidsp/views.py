@@ -316,7 +316,7 @@ def showFileList(request):
                 dirlist.append({
                     'title': file if file not in task_list else '(已添加)' + file,
                     'key': file,
-                    'children': appendFile(os.path.join(dir, file)),
+                    'children': appendFile(os.path.join(dir, file)) if file not in task_list else None,
                     'selectable': True if dir == os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile') and (file not in task_list) else False
                 })
             else:
