@@ -86,3 +86,11 @@ class DatasetDetailSerializer(DatasetSerializer):
         model = Dataset
         fields = ['id', 'name', 'project', 'describe', 'create_time', 'update_time', 'quantity_detials',
                   'path', 'img',  'project_id']
+
+
+class DatasetListSerializer(serializers.ModelSerializer):
+    project = serializers.StringRelatedField()
+
+    class Meta:
+        model = Dataset
+        fields = ['id', 'name', 'project', 'describe', 'create_time', 'update_time', 'quantity_detials', 'project_id']

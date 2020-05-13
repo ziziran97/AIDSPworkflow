@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import Project, User, Label, Document, QA, Reply, Dataset
 from .serializers import ProjectSerializer, ProjectDetailSerializer, UserSerializer, LabelSerializer, QASerializer, \
-    ProjectDisplaySerializer, ReplySerializer, DatasetSerializer, DatasetDetailSerializer
+    ProjectDisplaySerializer, ReplySerializer, DatasetSerializer, DatasetDetailSerializer, DatasetListSerializer
 from django.forms.models import model_to_dict
 from django.utils import timezone
 from django.db.models import Max
@@ -399,11 +399,11 @@ class DatasetViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     def list(self, request, *args, **kwargs):
+        self.serializer_class = DatasetListSerializer
         queryset = self.filter_queryset(self.get_queryset()[::-1])
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)

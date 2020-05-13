@@ -1,0 +1,25 @@
+server {
+    listen       80;
+    server_name  _ default;
+    return       404;
+}
+
+server {
+    listen       80;
+    server_name  localhost 192.* 127.* 218.*;
+    gzip on;
+    gzip_buffers 32 4K;
+    gzip_comp_level 6;
+    gzip_min_length 100;
+    gzip_types application/javascript text/css text/xml;
+    gzip_disable "MSIE [1-6]\.";
+    gzip_vary on;
+    location / {
+        proxy_pass              http://aidsp_web:8000;
+        proxy_pass_header       X-CSRFToken;
+        proxy_set_header        Host $http_host;
+        proxy_pass_header       Set-Cookie;
+        proxy_read_timeout      36000;
+    }
+
+}
