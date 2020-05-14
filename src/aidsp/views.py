@@ -7,6 +7,7 @@ import os
 from django.forms.models import model_to_dict
 from django.db.models import Q
 import json
+import shutil
 import urllib
 from django.conf import settings
 from django.db.models import Count
@@ -305,10 +306,13 @@ def finishImg(request, task_name=None):
 # 显示文件列表
 def showFileList(request):
     dir = settings.IMGFILEDIR
-    task_db = Task.objects.values('belong_task').annotate(dcount=Count('belong_task'))
+    task_db = Task.objects.filter()
     task_list = []
     for ele in task_db:
-        task_list.append(ele['belong_task'])
+        task_list.append(ele.task_name)
+        if ele.belong_task not in task_list:
+            task_list.append(ele.belong_task)
+
     def appendFile(dir):
         dirlist = []
         for file in os.listdir(dir):
@@ -445,3 +449,21 @@ def getImgTask(request):
         value['info'] = info
         return JsonResponse(value, safe=False)
     return HttpResponse('不允许的请求方式！')
+
+
+# 导出正确图片
+def picRight(request, task_name=None):
+    mtask = Task.objects.get(task_name=task_name)
+    rightImgs = Img.objects.filter(status=0, tasks=mtask)
+    basedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp')
+    rightlist = []
+    imgdir = os.path.join(basedir, os.path.dirname(rightImgs[0].url[1:]))
+    print(imgdir)
+    rightdir = os.path.join(imgdir, 'right')
+    if not os.path.exists(rightdir):
+        os.mkdir(rightdir)
+    for rightImg in rightImgs:
+        filename = os.path.basename(rightImg.url)
+        shutil.copyfile(os.path.join(imgdir, filename), os.path.join(rightdir, filename))
+
+    return HttpResponse('导出完成！')
