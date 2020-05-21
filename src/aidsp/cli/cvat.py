@@ -101,7 +101,7 @@ def create_tasks(auth, task_name, imgdir, cli_path):
         if 'labels.txt' in Dir:
             continue
         task_name = Dir
-        k = "python3 {} --auth {} --server-host {} --server-port 8080 create '{}' --labels '{}' local {}/{}/*".format(
+        k = "python3 {} --auth {} --server-host {} --server-port 8084 create '{}' --labels '{}' local {}/{}/*".format(
             cli_path, auth, netifaces.gateways()[netifaces.AF_INET][0][0], task_name,  labels_str, img_task_dir, task_name)
         result = subprocess.check_output(k, shell=True)
         res.append(json.loads(result.decode('utf-8')))

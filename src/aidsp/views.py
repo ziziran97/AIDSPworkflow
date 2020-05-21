@@ -13,6 +13,7 @@ from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
 from .cli.cvat import create_tasks
+import zipfile
 
 def project_index(request,page=None):
     return render(request, 'index.html')
@@ -45,13 +46,23 @@ def pic_screen(request,task_name=None):
     return render(request, 'pic_screen.html')
 
 def dataset_fileupload(request):
-    filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/file')
+    filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
+    print(request.FILES)
     filename = str(request.FILES['file'])
     while filename in os.listdir(filedir):
         filename = 'n_' + filename
     with open(os.path.join(filedir, filename), 'wb') as f:
         for chunk in request.FILES['file'].chunks():
             f.write(chunk)
+
+    r = zipfile.is_zipfile(os.path.join(filedir, filename))
+    if r:
+        fz = zipfile.ZipFile(os.path.join(filedir, filename), 'r')
+        for file in fz.namelist():
+            fz.extract(file, filedir)
+    else:
+        print('This is not zip')
+
     # 文件路径
     return HttpResponse(filename)
 

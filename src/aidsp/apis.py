@@ -7,6 +7,7 @@ from django.forms.models import model_to_dict
 from django.utils import timezone
 from django.db.models import Max
 import datetime
+from django.db.models import Q
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -197,7 +198,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         pdata = []
         # 列出所有用户查找空闲的人
         all_user = []
-        for eleuser in User.objects.filter():
+        for eleuser in User.objects.filter(~Q(position=0)):
             all_user.append(eleuser.name)
         for ele in serializer.data:
             pdict = dict(ele)
