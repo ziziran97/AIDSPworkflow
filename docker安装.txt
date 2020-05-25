@@ -26,7 +26,7 @@ docker-compose build
 
 #开始运行
 docker-compose up -d
-
+export PYTHONIOENCODING="UTF-8";
 #创建表和超级用户
 docker exec -it aidsp_web bash -ic 'python3 manage.py migrate'
 docker exec -it aidsp_web bash -ic 'python3 manage.py createsuperuser'

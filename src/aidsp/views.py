@@ -14,7 +14,16 @@ from django.db.models import Count
 from django.utils import timezone
 from .cli.cvat import create_tasks
 import zipfile
+from selenium import webdriver
+import time
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import requests
+import urllib3
+from lxml import etree
 
+urllib3.disable_warnings()
 def project_index(request,page=None):
     return render(request, 'index.html')
 
@@ -86,6 +95,18 @@ def taskPost(request):
         errorflog = False
         errortask = []
         erroruser = []
+        # selenium修改cvat表单
+        options = webdriver.ChromeOptions()
+        options.add_argument('--no-sandbox')
+        options.add_argument('--headless')
+        options.add_argument('--ignore-certificate-errors')  # 忽略https报错
+        driver = webdriver.Chrome(chrome_options=options)
+        driver.get("https:218.207.208.20:8080/dashboard/")
+        signin_info = signin()
+        driver.add_cookie({'name': 'csrftoken', 'value': signin_info['csrftoken']})
+        driver.add_cookie({'name': 'sessionid', 'value': signin_info['sessionid']})
+        driver.add_cookie(
+            {'name': 'waf_sign_cookie', 'value': signin_info['waf_sign_cookie']})
         # 读取csv
         while line:
             linedict = line.decode("gbk").replace('\r', '').replace('\n', '').split(',')
@@ -98,8 +119,9 @@ def taskPost(request):
                         for elename in linedict[1].split(' '):
                             if elename:
                                 try:
-                                    massignee = User.objects.get(name=elename)
+                                    massignee = User.objects.get(username=elename)
                                     ntask.assignee.add(massignee)
+                                    change_assignee(driver, ntask.task_name, elename)
                                 except Exception as e:
                                     print(e)
                                     erroruser.append(elename)
@@ -109,8 +131,11 @@ def taskPost(request):
                         for elename in linedict[2].split(' '):
                             if elename:
                                 try:
-                                    mreviewer = User.objects.get(name=elename)
+                                    mreviewer = User.objects.get(username=elename)
                                     ntask.reviewer.add(mreviewer)
+
+                                    change_owner(driver, ntask.task_name, elename)
+
                                 except Exception as e:
                                     print(e)
                                     erroruser.append(elename)
@@ -120,6 +145,7 @@ def taskPost(request):
                     print(e)
                     errortask.append(linedict[0])
                     errorflog = True
+        driver.quit()
         if errorflog:
             return HttpResponse('任务名%s不存在\n用户%s不存在' % (errortask, erroruser), status=203)
         else:
@@ -127,6 +153,7 @@ def taskPost(request):
 
     else:
         return HttpResponse('不允许的请求方式！')
+
 
 # 模型转换字典
 def get_dict(ele_model,rdata):
@@ -186,12 +213,51 @@ def tasksChange(request, id=None):
                 adict = request.POST['assignee'].split(',')
                 for ele in adict:
                     mtask.assignee.add(ele)
+                    if mtask.task_link.startswith('https'):
+                        # selenium修改cvat表单
+                        options = webdriver.ChromeOptions()
+                        options.add_argument('--no-sandbox')
+                        options.add_argument('--headless')
+                        options.add_argument('--ignore-certificate-errors')  # 忽略https报错
+                        driver = webdriver.Chrome(chrome_options=options)
+                        driver.get("https:218.207.208.20:8080/dashboard/")
+                        signin_info = signin()
+                        driver.add_cookie({'name': 'csrftoken', 'value': signin_info['csrftoken']})
+                        driver.add_cookie({'name': 'sessionid', 'value': signin_info['sessionid']})
+                        driver.add_cookie({'name': 'waf_sign_cookie', 'value': signin_info['waf_sign_cookie']})
+                        n_name = User.objects.get(id=ele).username
+                        try:
+                            change_assignee(driver, mtask.task_name, n_name)
+                        except:
+                            driver.quit()
+                            return HttpResponse("未找到任务", status=500)
+                        driver.quit()
+
         if 'reviewer' in request.POST:
             mtask.reviewer.clear()
             if request.POST['reviewer']:
                 rdict = request.POST['reviewer'].split(',')
                 for ele in rdict:
                     mtask.reviewer.add(ele)
+                    if mtask.task_link.startswith('https'):
+                        # selenium修改cvat表单
+                        options = webdriver.ChromeOptions()
+                        options.add_argument('--no-sandbox')
+                        options.add_argument('--headless')
+                        options.add_argument('--ignore-certificate-errors')  # 忽略https报错
+                        driver = webdriver.Chrome(chrome_options=options)
+                        driver.get("https:218.207.208.20:8080/dashboard/")
+                        signin_info = signin()
+                        driver.add_cookie({'name': 'csrftoken', 'value': signin_info['csrftoken']})
+                        driver.add_cookie({'name': 'sessionid', 'value': signin_info['sessionid']})
+                        driver.add_cookie({'name': 'waf_sign_cookie', 'value': signin_info['waf_sign_cookie']})
+                        n_name = User.objects.get(id=ele).username
+                        try:
+                            change_owner(driver, mtask.task_name, n_name)
+                        except:
+                            driver.quit()
+                            return HttpResponse("未找到任务", status=500)
+                        driver.quit()
         if 'status' in request.POST:
             mtask.status = request.POST['status']
             mtask.save()
@@ -478,3 +544,51 @@ def picRight(request, task_name=None):
         shutil.copyfile(os.path.join(imgdir, filename), os.path.join(rightdir, filename))
 
     return HttpResponse('导出完成！')
+
+
+def change_assignee(driver, task_name, assignee):
+    driver.get("https:218.207.208.20:8080/admin/engine/task/?q=%s" % task_name)
+    tn = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.LINK_TEXT, task_name)))
+    tn.click()
+    ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_assignee')))
+    ass.send_keys(assignee)
+    save = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, '_save')))
+    save.click()
+    wait = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator')))
+    # driver.get("https:218.207.208.20:8080/admin/engine/task/?q=%s" % task_name)
+    # driver.find_element_by_link_text(task_name).click()
+    # driver.find_element_by_id('id_assignee').send_keys(assignee)
+    # driver.find_element_by_name('_save').click()
+
+
+def change_owner(driver, task_name, owner):
+    driver.get("https:218.207.208.20:8080/admin/engine/task/?q=%s" % task_name)
+    tn = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.LINK_TEXT, task_name)))
+    tn.click()
+    ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_owner')))
+    ass.send_keys(owner)
+    save = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, '_save')))
+    save.click()
+    wait = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator')))
+
+
+def signin():
+    baseurl = 'https://218.207.208.20:8080'
+    ss = requests.session()
+    admin_url = baseurl + '/admin/login/?next=/admin/'
+    print('开始登录')
+    res = ss.get(admin_url, verify=False)
+    dic_cookies = requests.utils.dict_from_cookiejar(res.cookies)
+    html = etree.HTML(res.text)
+    x = html.xpath('//*[@id="login-form"]/input')
+    for ele in x:
+        token = ele.attrib['value']
+    data = {
+        'csrfmiddlewaretoken': token,
+        'username': 'cvat',
+        'password': 'cvat_Cpv17d0Da2',
+        'next': '/admin/',
+    }
+    adres = ss.post(admin_url, verify=False, data=data)
+    print('登录完毕')
+    return ss.cookies
