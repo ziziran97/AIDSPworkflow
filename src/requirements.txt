@@ -1,7 +1,10 @@
 Django==2.2.7
 djangorestframework==3.11.0
 django-cors-headers==3.2.1
-psycopg2
 requests
 Pillow
 netifaces
+urllib3
+lxml
+selenium
+psycopg2
