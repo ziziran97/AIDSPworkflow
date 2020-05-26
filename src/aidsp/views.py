@@ -22,8 +22,10 @@ from selenium.webdriver.support import expected_conditions as EC
 import requests
 import urllib3
 from lxml import etree
+import netifaces
 
 urllib3.disable_warnings()
+inside_url = 'http://' + netifaces.gateways()[netifaces.AF_INET][0][0]+':8084'
 def project_index(request,page=None):
     return render(request, 'index.html')
 
@@ -104,7 +106,7 @@ def taskPost(request):
         options.add_argument('--headless')
         options.add_argument('--ignore-certificate-errors')  # 忽略https报错
         driver = webdriver.Chrome(chrome_options=options)
-        driver.get("https:218.207.208.20:8080/dashboard/")
+        driver.get(inside_url + "/dashboard/")
         signin_info = signin()
         driver.add_cookie({'name': 'csrftoken', 'value': signin_info['csrftoken']})
         driver.add_cookie({'name': 'sessionid', 'value': signin_info['sessionid']})
@@ -223,7 +225,7 @@ def tasksChange(request, id=None):
                         options.add_argument('--headless')
                         options.add_argument('--ignore-certificate-errors')  # 忽略https报错
                         driver = webdriver.Chrome(chrome_options=options)
-                        driver.get("https:218.207.208.20:8080/dashboard/")
+                        driver.get(inside_url + "/dashboard/")
                         signin_info = signin()
                         driver.add_cookie({'name': 'csrftoken', 'value': signin_info['csrftoken']})
                         driver.add_cookie({'name': 'sessionid', 'value': signin_info['sessionid']})
@@ -249,7 +251,7 @@ def tasksChange(request, id=None):
                         options.add_argument('--headless')
                         options.add_argument('--ignore-certificate-errors')  # 忽略https报错
                         driver = webdriver.Chrome(chrome_options=options)
-                        driver.get("https:218.207.208.20:8080/dashboard/")
+                        driver.get(inside_url + "/dashboard/")
                         signin_info = signin()
                         driver.add_cookie({'name': 'csrftoken', 'value': signin_info['csrftoken']})
                         driver.add_cookie({'name': 'sessionid', 'value': signin_info['sessionid']})
@@ -550,7 +552,7 @@ def picRight(request, task_name=None):
 
 
 def change_assignee(driver, task_name, assignee):
-    driver.get("https:218.207.208.20:8080/admin/engine/task/?q=%s" % task_name)
+    driver.get(inside_url + "/admin/engine/task/?q=%s" % task_name)
     tn = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.LINK_TEXT, task_name)))
     tn.click()
     ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_assignee')))
@@ -558,14 +560,10 @@ def change_assignee(driver, task_name, assignee):
     save = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, '_save')))
     save.click()
     wait = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator')))
-    # driver.get("https:218.207.208.20:8080/admin/engine/task/?q=%s" % task_name)
-    # driver.find_element_by_link_text(task_name).click()
-    # driver.find_element_by_id('id_assignee').send_keys(assignee)
-    # driver.find_element_by_name('_save').click()
 
 
 def change_owner(driver, task_name, owner):
-    driver.get("https:218.207.208.20:8080/admin/engine/task/?q=%s" % task_name)
+    driver.get(inside_url + "/admin/engine/task/?q=%s" % task_name)
     tn = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.LINK_TEXT, task_name)))
     tn.click()
     ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_owner')))
@@ -576,12 +574,11 @@ def change_owner(driver, task_name, owner):
 
 
 def signin():
-    baseurl = 'https://218.207.208.20:8080'
+    baseurl = inside_url
     ss = requests.session()
     admin_url = baseurl + '/admin/login/?next=/admin/'
     print('开始登录')
     res = ss.get(admin_url, verify=False)
-    dic_cookies = requests.utils.dict_from_cookiejar(res.cookies)
     html = etree.HTML(res.text)
     x = html.xpath('//*[@id="login-form"]/input')
     for ele in x:
