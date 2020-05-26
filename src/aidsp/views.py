@@ -37,6 +37,9 @@ def project_detail(request, id=None):
     for ele in post.users_found.values('id'):
         if request.user.id == ele['id']:
             return render(request, 'project_detail.html')
+    for ele in post.users_manager.values('id'):
+        if request.user.id == ele['id']:
+            return render(request, 'project_detail.html')
     return HttpResponse('对不起，您没有编辑该项目的权限')
 
 
