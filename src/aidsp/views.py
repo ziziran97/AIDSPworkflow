@@ -110,8 +110,9 @@ def taskPost(request):
         signin_info = signin()
         driver.add_cookie({'name': 'csrftoken', 'value': signin_info['csrftoken']})
         driver.add_cookie({'name': 'sessionid', 'value': signin_info['sessionid']})
-        driver.add_cookie(
-            {'name': 'waf_sign_cookie', 'value': signin_info['waf_sign_cookie']})
+        if 'waf_sign_cookie' in signin_info:
+            driver.add_cookie(
+                {'name': 'waf_sign_cookie', 'value': signin_info['waf_sign_cookie']})
         # 读取csv
         while line:
             linedict = line.decode("gbk").replace('\r', '').replace('\n', '').split(',')
