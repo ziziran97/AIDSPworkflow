@@ -255,7 +255,8 @@ def tasksChange(request, id=None):
                         signin_info = signin()
                         driver.add_cookie({'name': 'csrftoken', 'value': signin_info['csrftoken']})
                         driver.add_cookie({'name': 'sessionid', 'value': signin_info['sessionid']})
-                        driver.add_cookie({'name': 'waf_sign_cookie', 'value': signin_info['waf_sign_cookie']})
+                        if 'waf_sign_cookie' in signin_info:
+                            driver.add_cookie({'name': 'waf_sign_cookie', 'value': signin_info['waf_sign_cookie']})
                         n_name = User.objects.get(id=ele).username
                         try:
                             change_owner(driver, mtask.task_name, n_name)
