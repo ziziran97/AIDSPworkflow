@@ -110,7 +110,7 @@ def create_tasks(auth, task_name, imgdir, cli_path):
 
 if __name__ == '__main__':
     # auth = input("auth:")
-    auth = 'xhwyzz:qwe123321'
+    auth = 'cvat:cvat_Cpv17d0Da2'
     # create_tasks_files()
     task_name = '1dir'
     imgdir = '../static/imgFile'
