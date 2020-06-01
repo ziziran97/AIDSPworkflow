@@ -12,5 +12,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'workload',
+    'django_apscheduler',
 ]
 AUTH_USER_MODEL = 'aidsp.User'
