@@ -628,7 +628,7 @@ def mdView(request, filename=None):
 
 #显示文档列表
 def mdList(requests):
-    mddir = os.path.join(os.path.dirname(settings.BASE_DIR), '../doc')
+    mddir = os.path.join(os.path.dirname(settings.BASE_DIR), 'doc')
     mdlist = []
     for file in os.listdir(mddir):
         if file.endswith('.html'):
