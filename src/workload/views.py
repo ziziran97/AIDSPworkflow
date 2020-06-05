@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from workload.models import Workload
-from django.db.models import Count,Max
+from aidsp.models import Project
+from django.db.models import Count, Max
 import netifaces
 
 
@@ -23,8 +24,8 @@ if 0:
         def my_job():
             # 这里写你要执行的任务
             conn = psycopg2.connect(database='cvat', user='root',
-                                    password='', host=netifaces.gateways()[netifaces.AF_INET][0][0],
-                                    port='15432')
+                                    password='', host='172.17.0.1',
+                                    port='65432')
             cursor = conn.cursor()
             # 查询新增标签数量
             job_id = {}
@@ -88,6 +89,7 @@ if 0:
         print(e)
         # scheduler.shutdown()
     my_job()
+
 
 def workload_list(request):
     workloads = Workload.objects.filter().annotate(dcount=Count('updated_date'))

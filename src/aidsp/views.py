@@ -24,9 +24,12 @@ import urllib3
 from lxml import etree
 import netifaces
 
+
 urllib3.disable_warnings()
 inside_url = 'http://' + netifaces.gateways()[netifaces.AF_INET][0][0]+':8084'
-def project_index(request,page=None):
+
+
+def project_index(request, page=None):
     return render(request, 'index.html')
 
 
@@ -126,6 +129,7 @@ def taskPost(request):
                             if elename:
                                 try:
                                     massignee = User.objects.get(username=elename)
+                                    ntask.assignee.clear()
                                     ntask.assignee.add(massignee)
                                     change_assignee(driver, ntask.task_name, elename)
                                 except Exception as e:
@@ -138,8 +142,8 @@ def taskPost(request):
                             if elename:
                                 try:
                                     mreviewer = User.objects.get(username=elename)
+                                    ntask.reviewer.clear()
                                     ntask.reviewer.add(mreviewer)
-
                                     change_owner(driver, ntask.task_name, elename)
 
                                 except Exception as e:
@@ -218,6 +222,7 @@ def tasksChange(request, id=None):
             if request.POST['assignee']:
                 adict = request.POST['assignee'].split(',')
                 for ele in adict:
+                    mtask.assignee.clear()
                     mtask.assignee.add(ele)
                     if mtask.task_link.startswith('https'):
                         # selenium修改cvat表单
@@ -245,6 +250,7 @@ def tasksChange(request, id=None):
             if request.POST['reviewer']:
                 rdict = request.POST['reviewer'].split(',')
                 for ele in rdict:
+                    mtask.reviewer.clear()
                     mtask.reviewer.add(ele)
                     if mtask.task_link.startswith('https'):
                         # selenium修改cvat表单
@@ -553,6 +559,90 @@ def picRight(request, task_name=None):
 
     return HttpResponse('导出完成！')
 
+# 清空本周工作量
+def workloadRm(request):
+    print(request.user)
+    if request.user.is_superuser:
+        all_peoject = Project.objects.filter().all()
+        for ele_project in all_peoject:
+            ele_project.quantity_week = None
+            ele_project.save()
+            print('删除完毕')
+        return HttpResponse('清空完毕！')
+    else:
+        return HttpResponse('您不是超级用户！')
+
+
+def hTagList(it, level, n):
+    hlist = []
+    while True:
+        if n is None:
+            return {'list': hlist, 'n': None}
+
+        # print('当前等级（%d）,当前文档（%s）,标签等级（%s）' % (level, n.xpath('string(.)'),n.tag))
+        if int(n.tag[1:2]) == level:
+            hlist.append({'title':n.xpath('string(.)'),'children': []})
+            try:
+                n = it.__next__()
+                continue
+            except Exception as e:
+                return {'list': hlist, 'n': None}
+
+        if int(n.tag[1:2]) > level:
+            print(hlist[-1])
+            ren = hTagList(it=it, level=int(n.tag[1:2]), n=n)
+            hlist[-1]['children']=ren['list']
+            n = ren['n']
+            continue
+
+        if int(n.tag[1:2]) < level:
+            return {'list': hlist, 'n': n }
+            break
+        break
+
+    return {'list': hlist, 'n': n}
+
+# 显示markdown
+def mdView(request, filename=None):
+    mddir = os.path.join(os.path.dirname(settings.BASE_DIR), '../doc')
+
+    # 直接读html
+    mdfile = os.path.join(mddir, filename + '.html')
+    if not os.path.exists(mdfile):
+        return HttpResponse('**不存在的md文件**')
+    with open(mdfile, 'r', encoding='utf-8') as f:
+        text = f.read()
+    html = text
+    text = text.replace('images/', '/aidsp/static/').replace('images\\', '/aidsp/static/')
+
+    html = etree.HTML(html)
+    h1_list = html.xpath('//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6]')
+    for ele in h1_list:
+        old_ele = etree.tostring(ele).decode('utf-8')
+        new_ele = old_ele.replace('<span>', '<span id="%s">' % ele.xpath('string(.)'))
+
+        text = text.replace(old_ele, new_ele)
+
+    return HttpResponse(text)
+
+
+#显示文档列表
+def mdList(requests):
+    mddir = os.path.join(os.path.dirname(settings.BASE_DIR), '../doc')
+    mdlist = []
+    for file in os.listdir(mddir):
+        if file.endswith('.html'):
+            mdfile = os.path.join(mddir, file)
+            with open(mdfile, 'r', encoding='utf-8') as f:
+                text = f.read()
+            html = etree.HTML(text)
+            h1_list = html.xpath('//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6]')
+            it = iter(h1_list)
+            n = it.__next__()
+            a = hTagList(it, int(n.tag[1:2]), n)
+            mdlist.append({'title': file.replace('.html', ''), 'children': a['list']})
+    return JsonResponse(mdlist, safe=False)
+
 
 def change_assignee(driver, task_name, assignee):
     driver.get(inside_url + "/admin/engine/task/?q=%s" % task_name)
@@ -595,3 +685,6 @@ def signin():
     adres = ss.post(admin_url, verify=False, data=data)
     print('登录完毕')
     return ss.cookies
+
+
+
