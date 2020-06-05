@@ -604,12 +604,12 @@ def hTagList(it, level, n):
 
 # 显示markdown
 def mdView(request, filename=None):
-    mddir = os.path.join(os.path.dirname(settings.BASE_DIR), '../doc')
+    mddir = os.path.join(os.path.dirname(settings.BASE_DIR), 'doc')
 
     # 直接读html
     mdfile = os.path.join(mddir, filename + '.html')
     if not os.path.exists(mdfile):
-        return HttpResponse('**不存在的md文件**')
+        return HttpResponse('**不存在的html文件**')
     with open(mdfile, 'r', encoding='utf-8') as f:
         text = f.read()
     html = text
