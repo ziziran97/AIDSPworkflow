@@ -152,7 +152,7 @@ TIME_ZONE = 'Asia/Shanghai'
 STATIC_URL = '/aidsp/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
-    os.path.join(BASE_DIR, "../../doc/images"),
+    os.path.join(BASE_DIR, "../doc"),
 ]
 APPEND_slash = False
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
