@@ -65,7 +65,6 @@ def pic_screen(request,task_name=None):
 
 def dataset_fileupload(request):
     filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
-    print(request.FILES)
     filename = str(request.FILES['file'])
     while filename in os.listdir(filedir):
         filename = 'n_' + filename
@@ -209,7 +208,6 @@ def taskGet(request, id=None, type=None):
         for ele in task_list:
             # 按大任务分类
             rdata = get_dict(ele, rdata)
-            print(rdata)
         return JsonResponse(rdata)
     else:
         return HttpResponse('不允许的请求方式！')
@@ -279,6 +277,10 @@ def tasksChange(request, id=None):
             mtask.save()
         if 'quantity_available' in request.POST:
             mtask.quantity_available = request.POST['quantity_available']
+            mtask.save()
+        if 'error_info' in request.POST:
+            print(request.POST)
+            mtask.error_info = request.POST['error_info']
             mtask.save()
         return HttpResponse('成功！')
 
@@ -490,9 +492,7 @@ def taskCopy(request):
             if not task_name.endswith(')'):
                 task_name = task_name + '(2)'
             else:
-                print(('(%d)' % i, '(%d)' % (i + 1)))
                 task_name = task_name.replace('(%d)' % i, '(%d)' % (i + 1))
-                print(task_name)
             i = i + 1
         Task.objects.create(project=mpid, task_name=task_name,
                             task_link=request.POST['task_link'],
@@ -551,7 +551,6 @@ def picRight(request, task_name=None):
     basedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp')
     rightlist = []
     imgdir = os.path.join(basedir, os.path.dirname(rightImgs[0].url[1:]))
-    print(imgdir)
     rightdir = os.path.join(imgdir, 'right')
     if not os.path.exists(rightdir):
         os.mkdir(rightdir)
@@ -563,7 +562,6 @@ def picRight(request, task_name=None):
 
 # 清空本周工作量
 def workloadRm(request):
-    print(request.user)
     if request.user.is_superuser:
         all_peoject = Project.objects.filter().all()
         for ele_project in all_peoject:
@@ -591,7 +589,6 @@ def hTagList(it, level, n):
                 return {'list': hlist, 'n': None}
 
         if int(n.tag[1:2]) > level:
-            print(hlist[-1])
             ren = hTagList(it=it, level=int(n.tag[1:2]), n=n)
             hlist[-1]['children']=ren['list']
             n = ren['n']
