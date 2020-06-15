@@ -264,6 +264,7 @@ class Task(models.Model):
     status = models.PositiveSmallIntegerField(choices=STATUS, verbose_name='状态')
     number_of_reviews = models.PositiveSmallIntegerField(default=0, verbose_name='审核次数', blank=True, null=True)
     task_type = models.PositiveSmallIntegerField(choices=TYPES, verbose_name='任务类型')
+    error_info = models.CharField(max_length=100, verbose_name='未通过理由', blank=True, null=True)
     # assignee = models.ForeignKey(to='User',
     #                              to_field='name',
     #                              related_name='assignee_task',
