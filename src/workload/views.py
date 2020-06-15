@@ -1,18 +1,20 @@
 from django.shortcuts import render
 from workload.models import Workload
-from aidsp.models import Project
-from django.db.models import Count, Max
+from aidsp.models import Project, Task
+from django.db.models import Count, Max, Sum, Expression
 import netifaces
-
-
+from django.db.models import Q
+from django.http import JsonResponse
 from apscheduler.schedulers.background import BackgroundScheduler
 from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 import psycopg2
 import datetime
-
+from collections import defaultdict
+from django.db import connection
 from django.conf import settings
 
-#开启定时工作
+
+# 开启定时工作
 if 0:
     try:
         # 实例化调度器
@@ -27,59 +29,58 @@ if 0:
                                     password='', host='172.17.0.1',
                                     port='65432')
             cursor = conn.cursor()
-            # 查询新增标签数量
-            job_id = {}
-            # cursor.execute('select MAX(lastid) from workload')
-            # row = cursor.fetchone()
-            # if row[0]:
-            #     lastid = row[0]
-            # else:
-            #     lastid = 0
-            lastid = Workload.objects.all().aggregate(Max('lastid'))['lastid__max']
-            if not lastid:
-                lastid = 3388000
-            cursor.execute("select job_id, count(job_id) from engine_labeledshape where id > %d group by job_id" % lastid)
-            rows = cursor.fetchall()
-            for row in rows:
-                job_id[row[0]] = row[1]
-            cursor.execute('select MAX(id) from engine_labeledshape')
-            row = cursor.fetchone()
-            lastid = row[0]
-            # 查询任务id的负责人
-            as_id = {}
-            for j_id in job_id:
-                cursor.execute("select task_id from engine_segment where id = %s" % j_id)
-                row = cursor.fetchone()
-                cursor.execute("select assignee_id from engine_task where id = %s" % row[0])
-                row = cursor.fetchone()
-                a_id = row[0]
-                if a_id not in as_id:
-                    as_id[a_id] = job_id[j_id]
-                else:
-                    as_id[a_id] = as_id[a_id] + job_id[j_id]
 
-            # 查询负责人id对应的用户名
+            # 查询用户名和ID对照
             cursor.execute("select id,username from auth_user")
             rows = cursor.fetchall()
-            # 用户名和ID对照
-            user_id = {}
+            user_ids = {}
             for row in rows:
-                user_id[row[0]] = row[1]
-            for ele in as_id:
-                dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                if ele is not None:
-                    # cursor.execute(
-                    #     "INSERT INTO workload (assignee, updated_date, workcount, lastid) VALUES ('%s', '%s', %d, %d)" % (
-                    #     user_id[ele], dt, as_id[ele], lastid))
-                    Workload.objects.create(assignee=user_id[ele], updated_date=dt, workcount=as_id[ele], lastid=lastid)
-                    print('添加成功')
+                user_ids[row[0]] = row[1]
+            tasks = Task.objects.filter(~Q(status='3'))
+            for task in tasks:
+                # 查询task_id
+                cursor.execute(
+                    "select id, assignee_id from engine_task where name='{taskname}'".format(taskname=task.task_name))
+                rows = cursor.fetchall()
+                if not rows:
+                    continue
+                taskid = rows[0][0]
+                user_id = rows[0][1]
+                if user_id in user_ids:
+                    user_name = user_ids[user_id]
                 else:
-                    # cursor.execute(
-                        # "INSERT INTO workload (assignee, updated_date, workcount, lastid) VALUES ('%s', '%s', %d, %d)" % (
-                        # 'None', dt, as_id[ele], lastid))
-                    Workload.objects.create(assignee='未分配任务', updated_date=dt, workcount=as_id[ele], lastid=lastid)
-                    print('添加成功')
-                # conn.commit()
+                    user_name = '未分配'
+
+                # 查询task下所属job_id
+                cursor.execute("select id from engine_segment where task_id=%s" % taskid)
+                job_ids = cursor.fetchall()
+
+                # 查询属于任务id的shape
+                exec_str = "select frame from engine_labeledshape where"
+                for job_id in job_ids:
+                    exec_str = exec_str + ' job_id=%s or' % job_id[0]
+                exec_str = exec_str[:-3]
+                exec_str = exec_str + ' group by frame'
+
+                cursor.execute(exec_str)
+                images_finish = cursor.fetchall()
+                task.current_workload = len(images_finish)
+                task.save()
+                dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                assignee_list = task.assignee.all()
+                if len(assignee_list) == 0:
+                    assignee_name = '未分配任务'
+                else:
+                    assignee_name = assignee_list[0].name
+                lastCount = Workload.objects.filter(task=task.task_name).aggregate(Sum('workcount'))
+                if not lastCount:
+                    workcount = len(images_finish)
+                else:
+                    workcount = len(images_finish) - lastCount['workcount__sum']
+                if workcount == 0:
+                    continue
+                Workload.objects.create(assignee=assignee_name, updated_date=dt, workcount=workcount,
+                                        task=task.task_name)
 
             cursor.close()
             conn.close()
@@ -92,57 +93,36 @@ if 0:
 
 
 def workload_list(request):
-    workloads = Workload.objects.filter().annotate(dcount=Count('updated_date'))
-    pdict = {}
-    wdict = {}
-    for ele in workloads:
-        if str(ele.updated_date)[:10] not in wdict:
-            wdict[str(ele.updated_date)[:10]] = {
-                'hours': {str(ele.updated_date)[11:19]: [{'type': ele.assignee, 'value': ele.workcount}]},
-                'days': [{'type': ele.assignee, 'value': ele.workcount}],
-            }
-        else:
-            # 天总工作量
-            flag = True
-            for i in wdict[str(ele.updated_date)[:10]]['days']:
-                if ele.assignee in i.values():
-                    i['value'] = i['value'] + ele.workcount
-                    flag = False
-            if flag:
-                wdict[str(ele.updated_date)[:10]]['days'].append({'type': ele.assignee, 'value': ele.workcount})
-            # 小时总工作量
-            if str(ele.updated_date)[11:19] not in wdict[str(ele.updated_date)[:10]]['hours']:
-                wdict[str(ele.updated_date)[:10]]['hours'][str(ele.updated_date)[11:19]] = [{'type': ele.assignee, 'value': ele.workcount}]
-            else:
-                wdict[str(ele.updated_date)[:10]]['hours'][str(ele.updated_date)[11:19]].append({'type': ele.assignee, 'value': ele.workcount})
+    # 项目任务查询
+    taskQuery = Project.objects.get(id=request.POST['pid']).project_task.all()
+    tasklist = []
+    for ele in taskQuery:
+        tasklist.append(ele.task_name)
+    # 当天工作量
+    dayWorkload = Workload.objects.filter(task__in=tasklist, updated_date__date=datetime.date(int(request.POST['YY']),
+                                                                                              int(request.POST['MM']),
+                                                                                              int(request.POST['DD'])))
+    dayWorkloadList = dayWorkload.values('assignee').annotate(workload=Sum('workcount'))
 
-    # 排序
-    for eleday in wdict:
-        wdict[eleday]['days'] = sorted(wdict[eleday]['days'], key=lambda x: x['value'], reverse=False)
-        for elehours in wdict[eleday]['hours']:
-            wdict[eleday]['hours'][elehours] = sorted(wdict[eleday]['hours'][elehours], key=lambda x: x['value'], reverse=False)
-    # 排序并转化为元组
-    for eleday in wdict:
-        wdict[eleday]['hours'] = sorted(wdict[eleday]['hours'].items(), key=lambda x: x[0], reverse=False)
-    wdict = sorted(wdict.items(), key=lambda x: x[0], reverse=True)
-    # 个人每天工作折线
-    for eledate,eledatevalue in wdict:
-        pdict[eledate] = {}
-        for elehours, elehoursvalue in eledatevalue['hours']:
-            for eleperson in elehoursvalue:
-                if eleperson['type'] not in pdict[eledate]:
-                    pdict[eledate][eleperson['type']] = [{'Date': elehours, 'Close': eleperson['value']}]
-                else:
-                    flag = True
-                    for i in pdict[eledate][eleperson['type']]:
-                        if elehours in i.values():
-                            i['Close'] = i['Close'] + eleperson['value']
-                            flag = False
-                    if flag:
-                        pdict[eledate][eleperson['type']].append({'Date': elehours, 'Close': int(eleperson['value']) + int(pdict[eledate][eleperson['type']][len(pdict[eledate][eleperson['type']])-1]['Close'])})
-
-    context = {
-        'wdict': wdict,
-        'pdict': pdict,
+    # 个人分时工作量
+    personWorkloadList = {}
+    personList = Workload.objects.filter().values_list('assignee').distinct()
+    for person in personList:
+        personWorkloadList[person[0]] = []
+        for i in range(0, 24):
+            hourWorkload = dayWorkload.filter(updated_date__hour=i, assignee=person[0]).values_list('assignee')\
+                .annotate(workload=Sum('workcount'))
+            if len(hourWorkload) == 0:
+                continue
+            personWorkloadList[person[0]].append({'hour': '%d时' % i, 'workload': hourWorkload[0][1]})
+    dataAll = {
+        'dayInfo': sorted(list(dayWorkloadList), key=lambda x: x['workload'], reverse=False),
+        'housInfo': personWorkloadList
     }
-    return render(request, 'workload/index.html', context=context)
+    return JsonResponse(dataAll, safe=False)
+
+
+
+
+
+

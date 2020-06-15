@@ -23,6 +23,7 @@ import requests
 import urllib3
 from lxml import etree
 import netifaces
+from django.db.models import Sum
 
 
 urllib3.disable_warnings()
@@ -208,6 +209,7 @@ def taskGet(request, id=None, type=None):
         for ele in task_list:
             # 按大任务分类
             rdata = get_dict(ele, rdata)
+            print(rdata)
         return JsonResponse(rdata)
     else:
         return HttpResponse('不允许的请求方式！')
@@ -686,5 +688,22 @@ def signin():
     print('登录完毕')
     return ss.cookies
 
+# 查询工作量百分比
+def percentage_workload(request, id=None):
+    task_query = Project.objects.get(id=id).project_task.all()
+    all_percentage = task_query.aggregate(current_workload=Sum('current_workload'),
+                                          quantity_available=Sum('quantity_available'),
+                                          gross=Sum('gross'))
+    each_percentage_query = task_query.values('belong_task').annotate(current_workload=Sum('current_workload'),
+                                                                      quantity_available=Sum('quantity_available'),
+                                                                      gross=Sum('gross'))
 
+    each_percentage = {}
+    for ele in each_percentage_query:
+        each_percentage[ele['belong_task']] = ele
+    dataAll = {
+        'all_percentage': all_percentage,
+        'each_percentage': each_percentage,
+    }
+    return JsonResponse(dataAll, safe=False)
 

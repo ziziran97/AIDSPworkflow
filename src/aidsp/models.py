@@ -259,6 +259,7 @@ class Task(models.Model):
     used_time = models.CharField(max_length=20, verbose_name='任务用时', blank=True, null=True)
     total_time = models.CharField(max_length=20, verbose_name='任务历时', blank=True, null=True)
     gross = models.IntegerField(verbose_name='此任务工作总量', blank=True, null=True)
+    current_workload = models.IntegerField(verbose_name='实时工作量', blank=True, null=True)
     quantity_available = models.IntegerField(verbose_name='此任务有效工作量', blank=True, null=True)
     status = models.PositiveSmallIntegerField(choices=STATUS, verbose_name='状态')
     number_of_reviews = models.PositiveSmallIntegerField(default=0, verbose_name='审核次数', blank=True, null=True)
