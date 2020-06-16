@@ -694,7 +694,6 @@ def percentage_workload(request, id=None):
     each_percentage_query = task_query.values('belong_task').annotate(current_workload=Sum('current_workload'),
                                                                       quantity_available=Sum('quantity_available'),
                                                                       gross=Sum('gross'))
-
     each_percentage = {}
     for ele in each_percentage_query:
         each_percentage[ele['belong_task']] = ele

@@ -15,19 +15,20 @@ from django.conf import settings
 
 
 # 开启定时工作
-if 0:
+if 1:
     try:
         # 实例化调度器
         scheduler = BackgroundScheduler()
         # 调度器使用DjangoJobStore()
         scheduler.add_jobstore(DjangoJobStore(), "default")
         # 设置定时任务，选择方式为interval，时间间隔为1小时
-        @register_job(scheduler,"interval", hours=1)
+        @register_job(scheduler,"cron", minute='59')
         def my_job():
             # 这里写你要执行的任务
             conn = psycopg2.connect(database='cvat', user='root',
                                     password='', host='172.17.0.1',
                                     port='65432')
+            print('连接完成')
             cursor = conn.cursor()
 
             # 查询用户名和ID对照
@@ -54,14 +55,12 @@ if 0:
                 # 查询task下所属job_id
                 cursor.execute("select id from engine_segment where task_id=%s" % taskid)
                 job_ids = cursor.fetchall()
-
                 # 查询属于任务id的shape
                 exec_str = "select frame from engine_labeledshape where"
                 for job_id in job_ids:
                     exec_str = exec_str + ' job_id=%s or' % job_id[0]
                 exec_str = exec_str[:-3]
                 exec_str = exec_str + ' group by frame'
-
                 cursor.execute(exec_str)
                 images_finish = cursor.fetchall()
                 task.current_workload = len(images_finish)
@@ -76,7 +75,7 @@ if 0:
                 if not lastCount:
                     workcount = len(images_finish)
                 else:
-                    workcount = len(images_finish) - lastCount['workcount__sum']
+                    workcount = len(images_finish) - (lastCount['workcount__sum'] if lastCount['workcount__sum'] else 0)
                 if workcount == 0:
                     continue
                 Workload.objects.create(assignee=assignee_name, updated_date=dt, workcount=workcount,
@@ -102,27 +101,45 @@ def workload_list(request):
     dayWorkload = Workload.objects.filter(task__in=tasklist, updated_date__date=datetime.date(int(request.POST['YY']),
                                                                                               int(request.POST['MM']),
                                                                                               int(request.POST['DD'])))
-    dayWorkloadList = dayWorkload.values('assignee').annotate(workload=Sum('workcount'))
 
+    dayWorkloadList = dayWorkload.values('assignee').annotate(workload=Sum('workcount'))
     # 个人分时工作量
-    personWorkloadList = {}
-    personList = Workload.objects.filter().values_list('assignee').distinct()
-    for person in personList:
-        personWorkloadList[person[0]] = []
-        for i in range(0, 24):
-            hourWorkload = dayWorkload.filter(updated_date__hour=i, assignee=person[0]).values_list('assignee')\
-                .annotate(workload=Sum('workcount'))
-            if len(hourWorkload) == 0:
-                continue
-            personWorkloadList[person[0]].append({'hour': '%d时' % i, 'workload': hourWorkload[0][1]})
+    # personWorkloadList = {}
+    # personList = Workload.objects.filter().values_list('assignee').distinct()
+    #
+    # for person in personList:
+    #     personWorkloadList[person[0]] = []
+    #     for i in range(0, 24):
+    #         hourWorkload = dayWorkload.filter(updated_date__hour=i, assignee=person[0]).values_list('assignee')\
+    #             .annotate(workload=Sum('workcount'))
+    #         if len(hourWorkload) == 0:
+    #             continue
+    #         personWorkloadList[person[0]].append({'hour': '%d时' % i, 'workload': hourWorkload[0][1]})
+
     dataAll = {
         'dayInfo': sorted(list(dayWorkloadList), key=lambda x: x['workload'], reverse=False),
-        'housInfo': personWorkloadList
+        # 'housInfo': personWorkloadList
     }
     return JsonResponse(dataAll, safe=False)
 
 
-
-
+def hours_info(request):
+    # 项目任务查询
+    taskQuery = Project.objects.get(id=request.POST['pid']).project_task.all()
+    tasklist = []
+    for ele in taskQuery:
+        tasklist.append(ele.task_name)
+    # 个人分时工作量
+    dayWorkload = Workload.objects.filter(task__in=tasklist, updated_date__date=datetime.date(int(request.POST['YY']),
+                                                                                              int(request.POST['MM']),
+                                                                                              int(request.POST['DD'])))
+    personWorkloadList = []
+    for i in range(0, 24):
+        hourWorkload = dayWorkload.filter(updated_date__hour=i, assignee=request.POST['user']).values_list('assignee')\
+            .annotate(workload=Sum('workcount'))
+        if len(hourWorkload) == 0:
+            continue
+        personWorkloadList.append({'hour': '%d时' % i, 'workload': hourWorkload[0][1]})
+    return JsonResponse(personWorkloadList, safe=False)
 
 
