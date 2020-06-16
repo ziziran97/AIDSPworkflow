@@ -15,7 +15,7 @@ from django.conf import settings
 
 
 # 开启定时工作
-if 1:
+if settings.SCHEDULETENABLE:
     try:
         # 实例化调度器
         scheduler = BackgroundScheduler()
@@ -101,7 +101,6 @@ def workload_list(request):
     dayWorkload = Workload.objects.filter(task__in=tasklist, updated_date__date=datetime.date(int(request.POST['YY']),
                                                                                               int(request.POST['MM']),
                                                                                               int(request.POST['DD'])))
-
     dayWorkloadList = dayWorkload.values('assignee').annotate(workload=Sum('workcount'))
     # 个人分时工作量
     # personWorkloadList = {}
