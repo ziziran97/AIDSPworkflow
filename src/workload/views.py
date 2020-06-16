@@ -65,7 +65,6 @@ if settings.SCHEDULETENABLE:
                 images_finish = cursor.fetchall()
                 task.current_workload = len(images_finish)
                 task.save()
-                dt = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 assignee_list = task.assignee.all()
                 if len(assignee_list) == 0:
                     assignee_name = '未分配任务'
@@ -78,7 +77,7 @@ if settings.SCHEDULETENABLE:
                     workcount = len(images_finish) - (lastCount['workcount__sum'] if lastCount['workcount__sum'] else 0)
                 if workcount == 0:
                     continue
-                Workload.objects.create(assignee=assignee_name, updated_date=dt, workcount=workcount,
+                Workload.objects.create(assignee=assignee_name, workcount=workcount,
                                         task=task.task_name)
 
             cursor.close()
