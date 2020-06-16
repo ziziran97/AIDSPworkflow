@@ -15,7 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from workload.views import workload_list
+from workload.views import workload_list, hours_info
 urlpatterns = [
     path('', workload_list),
+    path('hoursinfo/', hours_info),
 ]
