@@ -22,7 +22,7 @@ if settings.SCHEDULETENABLE:
         # 调度器使用DjangoJobStore()
         scheduler.add_jobstore(DjangoJobStore(), "default")
         # 设置定时任务，选择方式为interval，时间间隔为1小时
-        @register_job(scheduler,"cron", minute='59')
+        @register_job(scheduler,"cron", minute='55')
         def my_job():
             # 这里写你要执行的任务
             conn = psycopg2.connect(database='cvat', user='root',
@@ -37,7 +37,7 @@ if settings.SCHEDULETENABLE:
             user_ids = {}
             for row in rows:
                 user_ids[row[0]] = row[1]
-            tasks = Task.objects.filter(~Q(status='3'))
+            tasks = Task.objects.filter()
             for task in tasks:
                 # 查询task_id
                 cursor.execute(
@@ -78,7 +78,9 @@ if settings.SCHEDULETENABLE:
                 if workcount == 0:
                     continue
                 Workload.objects.create(assignee=assignee_name, workcount=workcount,
-                                        task=task.task_name)
+                                        task=task.task_name, project_id=task.project.id,
+                                        project_detail_name='{id}_{name}'.format(id=task.project.project_id,
+                                                                                 name=task.project.project_name))
 
             cursor.close()
             conn.close()
@@ -140,4 +142,68 @@ def hours_info(request):
         personWorkloadList.append({'hour': '%d时' % i, 'workload': hourWorkload[0][1]})
     return JsonResponse(personWorkloadList, safe=False)
 
+
+def hour_persons_info(request):
+    # 项目任务查询
+    taskQuery = Project.objects.get(id=request.POST['pid']).project_task.all()
+    tasklist = []
+    for ele in taskQuery:
+        tasklist.append(ele.task_name)
+    dayWorkload = Workload.objects.filter(task__in=tasklist, updated_date__date=datetime.date(int(request.POST['YY']),
+                                                                                              int(request.POST['MM']),
+                                                                                              int(request.POST['DD'])))
+    hourPersonsWorkload = dayWorkload.filter(updated_date__hour=request.POST['hour'].split('时')[0]).values('assignee') \
+        .annotate(workload=Sum('workcount'))
+    dataInfo = sorted(list(hourPersonsWorkload), key=lambda x: x['workload'], reverse=False)
+    return JsonResponse(dataInfo, safe=False)
+
+
+def get_daily_info(request):
+    print(request.POST)
+    workload_set = Workload.objects.filter(updated_date__date=datetime.date(int(request.POST['YY']),
+                                                                            int(request.POST['MM']),
+                                                                            int(request.POST['DD'])),
+                                           project_detail_name__isnull=False).\
+                    values('assignee', 'project_detail_name', 'project_id').annotate(workload=Sum('workcount'))
+    daily_info_ori = {}
+    for ele_workload in workload_set:
+        if ele_workload['assignee'] not in daily_info_ori:
+            daily_info_ori[ele_workload['assignee']] = [{'project': ele_workload['project_detail_name'],
+                                                        'workload': ele_workload['workload'],
+                                                         'project_id': ele_workload['project_id']}]
+        else:
+            daily_info_ori[ele_workload['assignee']].append({'project': ele_workload['project_detail_name'],
+                                                            'workload': ele_workload['workload'],
+                                                             'project_id': ele_workload['project_id']})
+    daily_info = []
+    daily_info_sort = sorted(daily_info_ori.items(), key=lambda x: len(x[1]), reverse=True)
+    for key, value in daily_info_sort:
+        daily_info.append({'name': key, 'taskInfo': value})
+    return JsonResponse(daily_info, safe=False)
+
+
+# def xx():
+#     # project_task = Project.objects.filter(~Q(status='完结'))
+#     # project_task_dict = {}
+#     # for project in project_task:
+#     #     for task in project.project_task.all():
+#     #         if project.project_id + '_' + project.project_name not in project_task_dict:
+#     #             project_task_dict[project.project_id + '_' + project.project_name] = [task.task_name]
+#     #         project_task_dict[project.project_id + '_' + project.project_name].append(task.task_name)
+#     # print(project_task_dict)
+#     # updated_date__date=datetime.date(2020, 6, 16),project_detail_name__isnull=False
+#     workload_set = Workload.objects.filter().\
+#         values('assignee', 'project_detail_name').annotate(workload=Sum('workcount'))
+#     daily_info_ori = {}
+#     for ele_workload in workload_set:
+#         if ele_workload['assignee'] not in daily_info_ori:
+#             daily_info_ori[ele_workload['assignee']] = [{'project': ele_workload['project_detail_name'],
+#                                                         'workload': ele_workload['workload']}]
+#         else:
+#             daily_info_ori[ele_workload['assignee']].append({'project': ele_workload['project_detail_name'],
+#                                                              'workload': ele_workload['workload']})
+#     daily_info = []
+#     for key, value in daily_info_ori.items():
+#         daily_info.append({'name': key, 'project': value})
+#     print(daily_info)
 

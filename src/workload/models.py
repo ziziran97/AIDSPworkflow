@@ -8,6 +8,8 @@ class Workload(models.Model):
     workcount = models.IntegerField(blank=True, null=True, verbose_name='工作量')
     lastid = models.IntegerField(blank=True, null=True, verbose_name='最后id')
     task = models.CharField(max_length=255, blank=True, null=True, verbose_name='任务')
+    project_detail_name = models.CharField(max_length=255, blank=True, null=True, verbose_name='项目全名')
+    project_id = models.IntegerField(blank=True, null=True, verbose_name='项目id')
 
     class Meta:
         db_table = 'workload'

@@ -23,6 +23,7 @@ urlpatterns = [
     path('dataset', project_index),
     path('personal', project_index),
     path('doc', project_index),
+    path('daily', project_index),
     path('screen/<task_name>', pic_screen),
     path('detail/<id>/', project_detail),
     path('api/', include((router.urls, str(router)), namespace='api')),
