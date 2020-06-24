@@ -27,7 +27,7 @@ from django.db.models import Sum
 
 
 urllib3.disable_warnings()
-inside_url = 'http://' + netifaces.gateways()[netifaces.AF_INET][0][0]+':8084'
+inside_url = 'http://' + settings.CVATURL + ':8084'
 
 
 def project_index(request, page=None):
@@ -496,7 +496,7 @@ def taskCopy(request):
             i = i + 1
         Task.objects.create(project=mpid, task_name=task_name,
                             task_link=request.POST['task_link'],
-                            gross=request.POST['gross'], status=0, belong_task=request.POST['belong_task'],
+                            gross=0, status=0, belong_task=request.POST['belong_task'],
                             task_type=request.POST['task_type'])
         return HttpResponse('添加完成')
     return HttpResponse('不允许的请求方式！')
@@ -544,21 +544,22 @@ def getImgTask(request):
     return HttpResponse('不允许的请求方式！')
 
 
-# 导出正确图片
+# 导出正确结果
 def picRight(request, task_name=None):
-    mtask = Task.objects.get(task_name=task_name)
-    rightImgs = Img.objects.filter(status=0, tasks=mtask)
-    basedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp')
-    rightlist = []
-    imgdir = os.path.join(basedir, os.path.dirname(rightImgs[0].url[1:]))
-    rightdir = os.path.join(imgdir, 'right')
-    if not os.path.exists(rightdir):
-        os.mkdir(rightdir)
+    mtask = Task.objects.filter(belong_task=task_name)
+    rightImgs = Img.objects.filter(status=0, tasks__in=mtask)
+    wrongImgs = Img.objects.filter(status=1, tasks__in=mtask)
+    result = ''
     for rightImg in rightImgs:
         filename = os.path.basename(rightImg.url)
-        shutil.copyfile(os.path.join(imgdir, filename), os.path.join(rightdir, filename))
-
-    return HttpResponse('导出完成！')
+        result = result + filename + ' Ture\n'
+    for wrongImg in wrongImgs:
+        filename = os.path.basename(wrongImg.url)
+        result = result + filename + ' False\n'
+    response = FileResponse(result)
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = 'attachment; filename={0}.txt'.format(task_name)
+    return response
 
 # 清空本周工作量
 def workloadRm(request):
