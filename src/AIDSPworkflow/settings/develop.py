@@ -159,3 +159,4 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 IMGFILEDIR = os.path.join(os.path.dirname(BASE_DIR), 'aidsp/static/imgFile')
 SESSION_COOKIE_NAME = "aidsp_session"
 SCHEDULETENABLE = False
+CVATURL = '192.168.206.130'

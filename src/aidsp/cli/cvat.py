@@ -8,12 +8,12 @@
 '''
 import os
 import shutil
-import sys
 import subprocess
 import re
 import time
 import json
-import netifaces
+from django.conf import settings as product
+
 '''
 
 '''
@@ -102,7 +102,7 @@ def create_tasks(auth, task_name, imgdir, cli_path):
             continue
         task_name = Dir
         k = "python3 {} --auth {} --server-host {} --server-port 8084 create '{}' --labels '{}' local {}/{}/*".format(
-            cli_path, auth, netifaces.gateways()[netifaces.AF_INET][0][0], task_name,  labels_str, img_task_dir, task_name)
+            cli_path, auth, product.CVATURL, task_name,  labels_str, img_task_dir, task_name)
         result = subprocess.check_output(k, shell=True)
         res.append(json.loads(result.decode('utf-8')))
     return res
@@ -110,13 +110,14 @@ def create_tasks(auth, task_name, imgdir, cli_path):
 
 if __name__ == '__main__':
     # auth = input("auth:")
-    auth = 'cvat:cvat_Cpv17d0Da2'
-    # create_tasks_files()
-    task_name = '1dir'
-    imgdir = '../static/imgFile'
-    cli_path = 'cli.py'
-    create_tasks(auth, task_name, imgdir, cli_path)
-
-
+    print(product.CVATURL)
+    # auth = 'cvat:cvat_Cpv17d0Da2'
+    # # create_tasks_files()
+    # task_name = '1dir'
+    # imgdir = '../static/imgFile'
+    # cli_path = 'cli.py'
+    # create_tasks(auth, task_name, imgdir, cli_path)
+    #
+    #
 
 

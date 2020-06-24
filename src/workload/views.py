@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from workload.models import Workload
-from aidsp.models import Project, Task
+from aidsp.models import Project, Task, Img
 from django.db.models import Count, Max, Sum, Expression
 import netifaces
 from django.db.models import Q
@@ -39,32 +39,40 @@ if settings.SCHEDULETENABLE:
                 user_ids[row[0]] = row[1]
             tasks = Task.objects.filter()
             for task in tasks:
-                # 查询task_id
-                cursor.execute(
-                    "select id, assignee_id from engine_task where name='{taskname}'".format(taskname=task.task_name))
-                rows = cursor.fetchall()
-                if not rows:
-                    continue
-                taskid = rows[0][0]
-                user_id = rows[0][1]
-                if user_id in user_ids:
-                    user_name = user_ids[user_id]
+                # 当为筛选任务时
+                if '_pick' in task.task_name:
+                    if len(task.assignee.all()) != 0:
+                        imgworkload = Img.objects.filter(tasks=task.belong_task, assignor=task.assignee.all()[0])
+                        task.current_workload = len(imgworkload)
+                        task.save()
                 else:
-                    user_name = '未分配'
+                    # 查询task_id
+                    cursor.execute(
+                        "select id, assignee_id from engine_task where name='{taskname}'".format(
+                            taskname=task.task_name))
+                    rows = cursor.fetchall()
+                    if not rows:
+                        continue
+                    taskid = rows[0][0]
+                    user_id = rows[0][1]
+                    if user_id in user_ids:
+                        user_name = user_ids[user_id]
+                    else:
+                        user_name = '未分配'
 
-                # 查询task下所属job_id
-                cursor.execute("select id from engine_segment where task_id=%s" % taskid)
-                job_ids = cursor.fetchall()
-                # 查询属于任务id的shape
-                exec_str = "select frame from engine_labeledshape where"
-                for job_id in job_ids:
-                    exec_str = exec_str + ' job_id=%s or' % job_id[0]
-                exec_str = exec_str[:-3]
-                exec_str = exec_str + ' group by frame'
-                cursor.execute(exec_str)
-                images_finish = cursor.fetchall()
-                task.current_workload = len(images_finish)
-                task.save()
+                    # 查询task下所属job_id
+                    cursor.execute("select id from engine_segment where task_id=%s" % taskid)
+                    job_ids = cursor.fetchall()
+                    # 查询属于任务id的shape
+                    exec_str = "select frame from engine_labeledshape where"
+                    for job_id in job_ids:
+                        exec_str = exec_str + ' job_id=%s or' % job_id[0]
+                    exec_str = exec_str[:-3]
+                    exec_str = exec_str + ' group by frame'
+                    cursor.execute(exec_str)
+                    images_finish = cursor.fetchall()
+                    task.current_workload = len(images_finish)
+                    task.save()
                 assignee_list = task.assignee.all()
                 if len(assignee_list) == 0:
                     assignee_name = '未分配任务'
@@ -72,9 +80,10 @@ if settings.SCHEDULETENABLE:
                     assignee_name = assignee_list[0].name
                 lastCount = Workload.objects.filter(task=task.task_name).aggregate(Sum('workcount'))
                 if not lastCount:
-                    workcount = len(images_finish)
+                    workcount = task.current_workload if task.current_workload else 0
                 else:
-                    workcount = len(images_finish) - (lastCount['workcount__sum'] if lastCount['workcount__sum'] else 0)
+                    workcount = (task.current_workload if task.current_workload else 0) - (
+                        lastCount['workcount__sum'] if lastCount['workcount__sum'] else 0)
                 if workcount == 0:
                     continue
                 Workload.objects.create(assignee=assignee_name, workcount=workcount,
@@ -180,30 +189,3 @@ def get_daily_info(request):
     for key, value in daily_info_sort:
         daily_info.append({'name': key, 'taskInfo': value})
     return JsonResponse(daily_info, safe=False)
-
-
-# def xx():
-#     # project_task = Project.objects.filter(~Q(status='完结'))
-#     # project_task_dict = {}
-#     # for project in project_task:
-#     #     for task in project.project_task.all():
-#     #         if project.project_id + '_' + project.project_name not in project_task_dict:
-#     #             project_task_dict[project.project_id + '_' + project.project_name] = [task.task_name]
-#     #         project_task_dict[project.project_id + '_' + project.project_name].append(task.task_name)
-#     # print(project_task_dict)
-#     # updated_date__date=datetime.date(2020, 6, 16),project_detail_name__isnull=False
-#     workload_set = Workload.objects.filter().\
-#         values('assignee', 'project_detail_name').annotate(workload=Sum('workcount'))
-#     daily_info_ori = {}
-#     for ele_workload in workload_set:
-#         if ele_workload['assignee'] not in daily_info_ori:
-#             daily_info_ori[ele_workload['assignee']] = [{'project': ele_workload['project_detail_name'],
-#                                                         'workload': ele_workload['workload']}]
-#         else:
-#             daily_info_ori[ele_workload['assignee']].append({'project': ele_workload['project_detail_name'],
-#                                                              'workload': ele_workload['workload']})
-#     daily_info = []
-#     for key, value in daily_info_ori.items():
-#         daily_info.append({'name': key, 'project': value})
-#     print(daily_info)
-
