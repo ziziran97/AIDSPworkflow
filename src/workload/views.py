@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, HttpResponse
 from workload.models import Workload
 from aidsp.models import Project, Task, Img
 from django.db.models import Count, Max, Sum, Expression
@@ -14,86 +14,87 @@ from django.db import connection
 from django.conf import settings
 
 
+def my_job():
+    # 这里写你要执行的任务
+    conn = psycopg2.connect(database='cvat', user='root',
+                            password='', host='172.17.0.1',
+                            port='65432')
+    print('连接完成')
+    cursor = conn.cursor()
+
+    # 查询用户名和ID对照
+    cursor.execute("select id,username from auth_user")
+    rows = cursor.fetchall()
+    user_ids = {}
+    for row in rows:
+        user_ids[row[0]] = row[1]
+    tasks = Task.objects.filter()
+    for task in tasks:
+        # 当为筛选任务时
+        if '_pick' in task.task_name:
+            if len(task.assignee.all()) != 0:
+                imgworkload = Img.objects.filter(tasks=task.belong_task, assignor=task.assignee.all()[0])
+                task.current_workload = len(imgworkload)
+                task.save()
+        else:
+            # 查询task_id
+            cursor.execute(
+                "select id, assignee_id from engine_task where name='{taskname}' order by id desc".format(
+                    taskname=task.task_name))
+            rows = cursor.fetchall()
+            if not rows:
+                continue
+            taskid = rows[0][0]
+            user_id = rows[0][1]
+            if user_id in user_ids:
+                user_name = user_ids[user_id]
+            else:
+                user_name = '未分配'
+
+            # 查询task下所属job_id
+            cursor.execute("select id from engine_segment where task_id=%s" % taskid)
+            job_ids = cursor.fetchall()
+            # 查询属于任务id的shape
+            exec_str = "select frame from engine_labeledshape where"
+            for job_id in job_ids:
+                exec_str = exec_str + ' job_id=%s or' % job_id[0]
+            exec_str = exec_str[:-3]
+            exec_str = exec_str + ' group by frame'
+            cursor.execute(exec_str)
+            images_finish = cursor.fetchall()
+            task.current_workload = len(images_finish)
+            task.save()
+        assignee_list = task.assignee.all()
+        if len(assignee_list) == 0:
+            assignee_name = '未分配任务'
+        else:
+            assignee_name = assignee_list[0].name
+        lastCount = Workload.objects.filter(task=task.task_name).aggregate(Sum('workcount'))
+        if not lastCount:
+            workcount = task.current_workload if task.current_workload else 0
+        else:
+            workcount = (task.current_workload if task.current_workload else 0) - (
+                lastCount['workcount__sum'] if lastCount['workcount__sum'] else 0)
+        if workcount == 0:
+            continue
+        Workload.objects.create(assignee=assignee_name, workcount=workcount,
+                                task=task.task_name, project_id=task.project.id,
+                                project_detail_name='{id}_{name}'.format(id=task.project.project_id,
+                                                                         name=task.project.project_name))
+
+    cursor.close()
+    conn.close()
+
+
 # 开启定时工作
-if settings.SCHEDULETENABLE:
+def scheable():
     try:
         # 实例化调度器
         scheduler = BackgroundScheduler()
         # 调度器使用DjangoJobStore()
-        scheduler.add_jobstore(DjangoJobStore(), "default")
-        # 设置定时任务，选择方式为interval，时间间隔为1小时
-        @register_job(scheduler,"cron", minute='55')
-        def my_job():
-            # 这里写你要执行的任务
-            conn = psycopg2.connect(database='cvat', user='root',
-                                    password='', host='172.17.0.1',
-                                    port='65432')
-            print('连接完成')
-            cursor = conn.cursor()
-
-            # 查询用户名和ID对照
-            cursor.execute("select id,username from auth_user")
-            rows = cursor.fetchall()
-            user_ids = {}
-            for row in rows:
-                user_ids[row[0]] = row[1]
-            tasks = Task.objects.filter()
-            for task in tasks:
-                # 当为筛选任务时
-                if '_pick' in task.task_name:
-                    if len(task.assignee.all()) != 0:
-                        imgworkload = Img.objects.filter(tasks=task.belong_task, assignor=task.assignee.all()[0])
-                        task.current_workload = len(imgworkload)
-                        task.save()
-                else:
-                    # 查询task_id
-                    cursor.execute(
-                        "select id, assignee_id from engine_task where name='{taskname}'".format(
-                            taskname=task.task_name))
-                    rows = cursor.fetchall()
-                    if not rows:
-                        continue
-                    taskid = rows[0][0]
-                    user_id = rows[0][1]
-                    if user_id in user_ids:
-                        user_name = user_ids[user_id]
-                    else:
-                        user_name = '未分配'
-
-                    # 查询task下所属job_id
-                    cursor.execute("select id from engine_segment where task_id=%s" % taskid)
-                    job_ids = cursor.fetchall()
-                    # 查询属于任务id的shape
-                    exec_str = "select frame from engine_labeledshape where"
-                    for job_id in job_ids:
-                        exec_str = exec_str + ' job_id=%s or' % job_id[0]
-                    exec_str = exec_str[:-3]
-                    exec_str = exec_str + ' group by frame'
-                    cursor.execute(exec_str)
-                    images_finish = cursor.fetchall()
-                    task.current_workload = len(images_finish)
-                    task.save()
-                assignee_list = task.assignee.all()
-                if len(assignee_list) == 0:
-                    assignee_name = '未分配任务'
-                else:
-                    assignee_name = assignee_list[0].name
-                lastCount = Workload.objects.filter(task=task.task_name).aggregate(Sum('workcount'))
-                if not lastCount:
-                    workcount = task.current_workload if task.current_workload else 0
-                else:
-                    workcount = (task.current_workload if task.current_workload else 0) - (
-                        lastCount['workcount__sum'] if lastCount['workcount__sum'] else 0)
-                if workcount == 0:
-                    continue
-                Workload.objects.create(assignee=assignee_name, workcount=workcount,
-                                        task=task.task_name, project_id=task.project.id,
-                                        project_detail_name='{id}_{name}'.format(id=task.project.project_id,
-                                                                                 name=task.project.project_name))
-
-            cursor.close()
-            conn.close()
-        register_events(scheduler)
+        # scheduler.add_jobstore(DjangoJobStore(), "default")
+        # @register_job(scheduler,"cron", minute='55')
+        scheduler.add_job(my_job, 'cron', minute='55')
         scheduler.start()
     except Exception as e:
         print(e)
@@ -168,12 +169,11 @@ def hour_persons_info(request):
 
 
 def get_daily_info(request):
-    print(request.POST)
     workload_set = Workload.objects.filter(updated_date__date=datetime.date(int(request.POST['YY']),
                                                                             int(request.POST['MM']),
                                                                             int(request.POST['DD'])),
                                            project_detail_name__isnull=False).\
-                    values('assignee', 'project_detail_name', 'project_id').annotate(workload=Sum('workcount'))
+                        values('assignee', 'project_detail_name', 'project_id').annotate(workload=Sum('workcount'))
     daily_info_ori = {}
     for ele_workload in workload_set:
         if ele_workload['assignee'] not in daily_info_ori:
@@ -189,3 +189,14 @@ def get_daily_info(request):
     for key, value in daily_info_sort:
         daily_info.append({'name': key, 'taskInfo': value})
     return JsonResponse(daily_info, safe=False)
+
+
+def scd_switch(request):
+    if request.user.is_superuser:
+        if settings.SCHEDULETENABLE:
+            return HttpResponse('定时任务已开启')
+        scheable()
+        settings.SCHEDULETENABLE = True
+        return HttpResponse('定时任务开启中')
+    else:
+        return HttpResponse('您不是超级用户')
