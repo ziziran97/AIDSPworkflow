@@ -9,3 +9,4 @@ urllib3
 lxml
 selenium
 psycopg2
+dwebsocket

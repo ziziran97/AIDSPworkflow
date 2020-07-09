@@ -202,7 +202,7 @@ def get_dict(ele_model,rdata):
 # 获取任务信息
 def taskGet(request, id=None, type=None):
     if request.method == 'GET':
-        task_list = Task.objects.filter(project_id=id, task_type=type)
+        task_list = Task.objects.filter(project_id=id, task_type=type).order_by('task_name')
         rdata = {}
         # 添加任务信息到字典
         for ele in task_list:
@@ -298,7 +298,7 @@ def personalTasksGet(request):
             4: {},
             5: {},
     }
-    rtask_list = Task.objects.filter(reviewer=request.user.id)
+    rtask_list = Task.objects.filter(reviewer=request.user.id).order_by('task_name')
     for ele in rtask_list:
         if ele.status == 5:
             rdata[1] = get_dict(ele, rdata[1])
@@ -316,7 +316,7 @@ def personalTasksGet(request):
         4: {},
         5: {},
     }
-    atask_list = Task.objects.filter(assignee=request.user.id)
+    atask_list = Task.objects.filter(assignee=request.user.id).order_by('task_name')
     for ele in atask_list:
         if ele.status == 5:
             adata[1] = get_dict(ele, adata[1])
@@ -405,12 +405,14 @@ def showFileList(request):
     task_list = []
     for ele in task_db:
         task_list.append(ele.task_name)
-        if ele.belong_task not in task_list:
-            task_list.append(ele.belong_task)
+        # if ele.belong_task not in task_list:
+        #     task_list.append(ele.belong_task)
 
     def appendFile(dir):
         dirlist = []
-        for file in os.listdir(dir):
+        filedir = os.listdir(dir)
+        filedir.sort(key=lambda x: os.path.getmtime(os.path.join(dir, x)), reverse=True)
+        for file in filedir:
             if os.path.isdir(os.path.join(dir, file)):
                 dirlist.append({
                     'title': file if file not in task_list else '(已添加)' + file,
@@ -419,7 +421,7 @@ def showFileList(request):
                     'selectable': True if dir == os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile') and (file not in task_list) else False
                 })
             else:
-                if file != '.gitignore':
+                if file != '.gitignore' and not file.endswith('.zip'):
                     dirlist.append({
                         'title': file,
                         'key': file,
@@ -704,3 +706,92 @@ def percentage_workload(request, id=None):
     }
     return JsonResponse(dataAll, safe=False)
 
+
+from dwebsocket.decorators import accept_websocket
+
+#  创建任务长连接
+@accept_websocket
+def socket_tasksupload(request):
+    if request.is_websocket():
+        for message in request.websocket:
+            if not message:
+                continue
+            post_data = json.loads(message.decode())
+            try:
+                # 筛选任务
+                if post_data['type'] == 'screen':
+                    taskdir = os.path.join(settings.IMGFILEDIR, post_data['task'])
+                    for file in os.listdir(taskdir):
+                        if os.path.isdir(os.path.join(taskdir, file)):
+                            # return HttpResponse('筛选任务的文件夹中不能包含文件夹', status=500)
+                            request.websocket.send('筛选任务的文件夹中不能包含文件夹'.encode('utf-8'))
+
+                            return
+
+                    mpid = Project.objects.get(id=post_data['project'])
+                    # 创建任务
+                    ntask = Task.objects.create(project=mpid, task_name=post_data['task'], task_link='/aidsp/screen/'+post_data['task'],
+                                                gross=len(os.listdir(taskdir)), status=0, belong_task=post_data['task'],
+                                                task_type=post_data['task_type'])
+                    # 添加图片
+                    img_list = []
+                    for file in os.listdir(taskdir):
+                        img = Img(tasks=ntask, url='/static/imgFile/'+post_data['task']+'/'+file)
+                        img_list.append(img)
+                    Img.objects.bulk_create(img_list)
+                    # return HttpResponse('添加完成')
+                    request.websocket.send('添加完成'.encode('utf-8'))
+                    return
+                #标注任务
+                elif post_data['type'] == 'tagging':
+                    auth = 'cvat:cvat_Cpv17d0Da2'
+                    # create_tasks_files()
+                    task_name = post_data['task']
+                    imgdir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
+                    cli_path = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/cli/cli.py')
+                    taskdir = os.path.join(imgdir, task_name)
+                    count = -1
+                    for file in os.listdir(taskdir):
+                        if file.endswith('.jpg') or file.endswith('.png'):
+                            request.websocket.send('标注任务的文件夹中不能包含图片'.encode('utf-8'))
+                            return
+                        count = count + 1
+                    value = create_tasks(auth, task_name, imgdir, cli_path)
+                    i = 0
+                    while True:
+                        try:
+                            ele = next(value)
+                            i = i + 1
+                            if ele == '跳过':
+                                i = i - 1
+                                continue
+                            request.websocket.send(('提交中...  %d/%d' % (i, count)).encode('utf-8'))
+                            task_link = ''
+                            for job in ele['segments']:
+                                if task_link != '':
+                                    task_link = task_link + ' '
+                                task_link = task_link + 'https://218.207.208.20:8080/?id=%s' % job['jobs'][0]['id']
+
+                            mpid = Project.objects.get(id=post_data['project'])
+                            Task.objects.create(project=mpid, task_name=ele['name'],
+                                                task_link=task_link,
+                                                gross=ele['size'], status=0, belong_task=post_data['task'],
+                                                task_type=post_data['task_type'])
+                        except StopIteration as e:
+                            break
+                        except Exception as e:
+                            print(e)
+                            i = i - 1
+                            break
+                    if i == -1:
+                        request.websocket.send(('连接cvat失败').encode('utf-8'))
+                    elif i == 0:
+                        request.websocket.send(('没有可以创建的任务').encode('utf-8'))
+                    else:
+                        request.websocket.send(('添加完成 %d/%d' % (i, count)).encode('utf-8'))
+            except Exception as e:
+                request.websocket.send(str(e).encode('utf-8'))
+                return
+
+    else:
+        return HttpResponse('不支持websocket')

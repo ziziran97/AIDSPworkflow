@@ -2,6 +2,7 @@ from .models import Project, User, Dataset, QA, Task, Img
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy
+from workload.models import Workload
 
 
 class UserProfileAdmin(UserAdmin):
@@ -18,20 +19,10 @@ class UserProfileAdmin(UserAdmin):
     )
 
 
+class TaskAdmin(admin.ModelAdmin):
+    search_fields = ['task_name']
+
+
 admin.site.register(Project)
 admin.site.register(User, UserProfileAdmin)
-admin.site.register(Task)
-
-
-# @admin.register(Project)
-# class ProjectAdmin(admin.ModelAdmin):
-#     list_display = ['project_id', 'project_name', 'status']
-#     fields = ['project_id', 'project_name']
-
-
-# @admin.register(Dataset)
-# class DatasetAdmin(admin.ModelAdmin):
-#     list_display = ['id', 'project', 'name', 'describe',
-#                     'create_time', 'update_time',
-#                     'quantity_detials', 'path']
-#     fields = ['name', 'path']
+admin.site.register(Task, TaskAdmin)
