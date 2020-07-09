@@ -202,7 +202,7 @@ def get_dict(ele_model,rdata):
 # 获取任务信息
 def taskGet(request, id=None, type=None):
     if request.method == 'GET':
-        task_list = Task.objects.filter(project_id=id, task_type=type)
+        task_list = Task.objects.filter(project_id=id, task_type=type).order_by('task_name')
         rdata = {}
         # 添加任务信息到字典
         for ele in task_list:
