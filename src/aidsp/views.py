@@ -298,7 +298,7 @@ def personalTasksGet(request):
             4: {},
             5: {},
     }
-    rtask_list = Task.objects.filter(reviewer=request.user.id)
+    rtask_list = Task.objects.filter(reviewer=request.user.id).order_by('task_name')
     for ele in rtask_list:
         if ele.status == 5:
             rdata[1] = get_dict(ele, rdata[1])
@@ -316,7 +316,7 @@ def personalTasksGet(request):
         4: {},
         5: {},
     }
-    atask_list = Task.objects.filter(assignee=request.user.id)
+    atask_list = Task.objects.filter(assignee=request.user.id).order_by('task_name')
     for ele in atask_list:
         if ele.status == 5:
             adata[1] = get_dict(ele, adata[1])
@@ -410,7 +410,9 @@ def showFileList(request):
 
     def appendFile(dir):
         dirlist = []
-        for file in os.listdir(dir):
+        filedir = os.listdir(dir)
+        filedir.sort(key=lambda x: os.path.getmtime(os.path.join(dir, x)), reverse=True)
+        for file in filedir:
             if os.path.isdir(os.path.join(dir, file)):
                 dirlist.append({
                     'title': file if file not in task_list else '(已添加)' + file,
