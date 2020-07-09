@@ -691,7 +691,10 @@ def signin():
 # 查询工作量百分比
 def percentage_workload(request, id=None):
     task_query = Project.objects.get(id=id).project_task.all()
-    all_percentage = task_query.aggregate(current_workload=Sum('current_workload'),
+    all_percentage1 = task_query.filter(task_type=1).aggregate(current_workload=Sum('current_workload'),
+                                          quantity_available=Sum('quantity_available'),
+                                          gross=Sum('gross'))
+    all_percentage2 = task_query.filter(task_type=2).aggregate(current_workload=Sum('current_workload'),
                                           quantity_available=Sum('quantity_available'),
                                           gross=Sum('gross'))
     each_percentage_query = task_query.values('belong_task').annotate(current_workload=Sum('current_workload'),
@@ -701,7 +704,8 @@ def percentage_workload(request, id=None):
     for ele in each_percentage_query:
         each_percentage[ele['belong_task']] = ele
     dataAll = {
-        'all_percentage': all_percentage,
+        'all_percentage1': all_percentage1,
+        'all_percentage2': all_percentage2,
         'each_percentage': each_percentage,
     }
     return JsonResponse(dataAll, safe=False)
