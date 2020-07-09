@@ -13,7 +13,7 @@ import re
 import time
 import json
 from django.conf import settings as product
-
+import psycopg2
 '''
 
 '''
@@ -97,15 +97,29 @@ def create_tasks(auth, task_name, imgdir, cli_path):
     dirs = os.listdir(img_task_dir)
     dirs.sort()
     res = []
+    conn = psycopg2.connect(database='postgres', user='postgres',
+                            password='postgres', host='db',
+                            port='5432')
+    cursor = conn.cursor()
     for Dir in dirs:
         if 'labels.txt' in Dir:
             continue
         task_name = Dir
-        k = "python3 {} --auth {} --server-host {} --server-port 8084 create '{}' --labels '{}' local {}/{}/*".format(
-            cli_path, auth, product.CVATURL, task_name,  labels_str, img_task_dir, task_name)
-        result = subprocess.check_output(k, shell=True)
-        res.append(json.loads(result.decode('utf-8')))
-    return res
+        cursor.execute("select id from aidsp_task where task_name='{task_name}'".format(task_name=task_name))
+        rows = cursor.fetchall()
+        if len(rows) != 0:
+            yield '跳过'
+            continue
+        try:
+            k = "python3 {} --auth {} --server-host {} --server-port 8084 create '{}' --labels '{}' local {}/{}/*".format(
+                cli_path, auth, product.CVATURL, task_name,  labels_str, img_task_dir, task_name)
+            result = subprocess.check_output(k, shell=True)
+        except:
+            yield '跳过'
+            continue
+        yield json.loads(result.decode('utf-8'))
+    #     res.append(json.loads(result.decode('utf-8')))
+    # return res
 
 
 if __name__ == '__main__':

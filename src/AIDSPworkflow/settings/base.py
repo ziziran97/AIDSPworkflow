@@ -14,5 +14,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'workload',
     'django_apscheduler',
+    'dwebsocket',
 ]
 AUTH_USER_MODEL = 'aidsp.User'
+WEBSOCKET_ACCEPT_ALL=True

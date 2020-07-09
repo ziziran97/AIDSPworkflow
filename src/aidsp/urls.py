@@ -4,7 +4,7 @@ from django.contrib import admin
 from .views import project_index, project_detail, project_display, dataset_display, dataset_detail,\
     dataset_fileupload, dataset_filedownload, aidspRedirect, taskPost, taskGet, tasksChange, personalTasksGet,\
     extraProjectPost, getImg, postImg, finishImg, showFileList, tasksUpload, pic_screen, taskCopy, getImgTask, \
-    workloadRm, mdView, mdList, percentage_workload, picRight
+    workloadRm, mdView, mdList, percentage_workload, picRight, socket_tasksupload
 from .apis import ProjectViewSet, UserViewSet, LabelViewSet, QAViewSet, ProjectdisplayViewSet, ReplyViewSet, DatasetViewSet
 from rest_framework.routers import DefaultRouter
 
@@ -51,4 +51,5 @@ urlpatterns = [
     path('doclist', mdList),
     path('perworkload/<id>/', percentage_workload),
     path('project/picright/<task_name>/', picRight),
+    path('sktasksupload', socket_tasksupload),
 ]
