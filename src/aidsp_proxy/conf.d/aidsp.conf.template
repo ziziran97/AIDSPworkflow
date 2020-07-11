@@ -15,5 +15,11 @@ server {
         proxy_pass_header       Set-Cookie;
         proxy_read_timeout      36000;
     }
-
+    location /aidsp/sktasksupload {
+        proxy_pass http://aidsp_web:8000/aidsp/sktasksupload;
+        proxy_set_header Host $host:$server_port;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
 }
