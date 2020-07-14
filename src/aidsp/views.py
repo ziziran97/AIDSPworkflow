@@ -344,6 +344,10 @@ def extraProjectPost(request):
                 tproject.task_description = request.POST['task_description']
             if key == 'expected_time':
                 tproject.expected_time = request.POST['expected_time']
+            if key == 'task_standard':
+                tproject.task_standard = request.POST['task_standard']
+            if key == 'basic_quantity':
+                tproject.basic_quantity = request.POST['basic_quantity']
         tproject.save()
         return HttpResponse('ok')
 
@@ -404,7 +408,11 @@ def showFileList(request):
     task_db = Task.objects.filter()
     task_list = []
     for ele in task_db:
-        task_list.append(ele.task_name)
+        if ele.task_name.endswith('_pick'):
+            tn = ele.task_name[:-5]
+        else:
+            tn = ele.task_name
+        task_list.append(tn)
         # if ele.belong_task not in task_list:
         #     task_list.append(ele.belong_task)
 
@@ -733,9 +741,11 @@ def socket_tasksupload(request):
                             return
 
                     mpid = Project.objects.get(id=post_data['project'])
+                    if not post_data['task'].endswith('_pick'):
+                        task_name = post_data['task'] + '_pick'
                     # 创建任务
-                    ntask = Task.objects.create(project=mpid, task_name=post_data['task'], task_link='/aidsp/screen/'+post_data['task'],
-                                                gross=len(os.listdir(taskdir)), status=0, belong_task=post_data['task'],
+                    ntask = Task.objects.create(project=mpid, task_name=task_name, task_link='/aidsp/screen/'+task_name,
+                                                gross=len(os.listdir(taskdir)), status=0, belong_task=task_name,
                                                 task_type=post_data['task_type'])
                     # 添加图片
                     img_list = []
@@ -799,3 +809,16 @@ def socket_tasksupload(request):
 
     else:
         return HttpResponse('不支持websocket')
+
+
+def task_standard_post(request):
+    tproject = Project.objects.get(id=request.POST['pid'])
+    if request.POST['standard']:
+        for ele in request.POST['standard'].split(','):
+            if ele.split('_')[0] not in ["rectangle", "polygon", "polyline", "points"]:
+                return HttpResponse('标签格式不规范', status=500)
+        tproject.task_standard = request.POST['standard']
+    else:
+        tproject.task_standard = None
+    tproject.save()
+    return HttpResponse('成功')
