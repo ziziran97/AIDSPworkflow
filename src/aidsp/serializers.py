@@ -67,7 +67,7 @@ class ProjectDisplaySerializer(serializers.ModelSerializer):
         fields = ['project_id', 'project_name', 'status', 'create_time', 'end_time', 'background', 'total_demand',
                   'total_describe', 'deadline', 'labels', 'users_found', 'users_manager', 'users_attend',
                   'requirement_documents', 'collection_documents', 'labeling_documents', 'quantity_week',
-                  'task_description', 'expected_time']
+                  'task_description', 'expected_time', 'task_standard', 'basic_quantity']
 
 
 class DatasetSerializer(serializers.ModelSerializer):

@@ -54,16 +54,50 @@ def my_job():
             # 查询task下所属job_id
             cursor.execute("select id from engine_segment where task_id=%s" % taskid)
             job_ids = cursor.fetchall()
-            # 查询属于任务id的shape
-            exec_str = "select frame from engine_labeledshape where"
-            for job_id in job_ids:
-                exec_str = exec_str + ' job_id=%s or' % job_id[0]
-            exec_str = exec_str[:-3]
-            exec_str = exec_str + ' group by frame'
-            cursor.execute(exec_str)
-            images_finish = cursor.fetchall()
-            task.current_workload = len(images_finish)
-            task.save()
+
+            # 没有标准的任务
+            if not task.project.task_standard:
+                exec_str = "select frame from engine_labeledshape where"
+                for job_id in job_ids:
+                    exec_str = exec_str + ' job_id=%s or' % job_id[0]
+                exec_str = exec_str[:-3]
+                exec_str = exec_str + ' group by frame'
+                cursor.execute(exec_str)
+                images_finish = cursor.fetchall()
+                task.current_workload = len(images_finish)
+                task.save()
+            # 有标准的任务
+            else:
+                exec_str = "select a.frame, a.type, (select b.name from engine_label as b where b.id=a.label_id) as label_name from engine_labeledshape as a where"
+                for job_id in job_ids:
+                    exec_str = exec_str + ' job_id=%s or' % job_id[0]
+                exec_str = exec_str[:-3]
+                task_standard = task.project.task_standard.split(',')  # 任务标准
+                cursor.execute(exec_str)
+                images_finish = cursor.fetchall()
+                label_dict = {}
+                for ele in images_finish:
+                    label_n = ele[1]+'_'+ele[2]
+                    if label_n not in task_standard:
+                        continue
+                    if label_n not in label_dict:
+                        label_dict[label_n] = [ele[0]]
+                    else:
+                        label_dict[label_n].append(ele[0])
+                f = 0
+                ins = {}
+                for label_n in task_standard:
+                    # 标签不全
+                    if label_n not in label_dict:
+                        ins = {}
+                        break
+                    if f == 0:
+                        ins = set(label_dict[label_n])
+                        f = f + 1
+                    else:
+                        ins = ins & set(label_dict[label_n])
+                task.current_workload = len(ins)
+                task.save()
         assignee_list = task.assignee.all()
         if len(assignee_list) == 0:
             assignee_name = '未分配任务'
@@ -179,11 +213,15 @@ def get_daily_info(request):
         if ele_workload['assignee'] not in daily_info_ori:
             daily_info_ori[ele_workload['assignee']] = [{'project': ele_workload['project_detail_name'],
                                                         'workload': ele_workload['workload'],
-                                                         'project_id': ele_workload['project_id']}]
+                                                         'project_id': ele_workload['project_id'],
+                                                         'basic_quantity':Project.objects.get(
+                                                                 id=ele_workload['project_id']).basic_quantity}]
         else:
             daily_info_ori[ele_workload['assignee']].append({'project': ele_workload['project_detail_name'],
                                                             'workload': ele_workload['workload'],
-                                                             'project_id': ele_workload['project_id']})
+                                                             'project_id': ele_workload['project_id'],
+                                                             'basic_quantity': Project.objects.get(
+                                                                 id=ele_workload['project_id']).basic_quantity})
     daily_info = []
     daily_info_sort = sorted(daily_info_ori.items(), key=lambda x: len(x[1]), reverse=True)
     for key, value in daily_info_sort:
@@ -197,6 +235,110 @@ def scd_switch(request):
             return HttpResponse('定时任务已开启')
         scheable()
         settings.SCHEDULETENABLE = True
-        return HttpResponse('定时任务开启中')
+        return HttpResponse('定时任务开启完成')
     else:
         return HttpResponse('您不是超级用户')
+
+
+
+
+def ttt():
+    # 这里写你要执行的任务
+    conn = psycopg2.connect(database='cvat', user='root',
+                            password='', host='192.168.206.130',
+                            port='15432')
+    print('连接完成')
+    cursor = conn.cursor()
+
+    # 查询用户名和ID对照
+    cursor.execute("select id,username from auth_user")
+    rows = cursor.fetchall()
+    user_ids = {}
+    for row in rows:
+        user_ids[row[0]] = row[1]
+    tasks = Task.objects.filter()
+    for task in tasks:
+        # 当为筛选任务时
+        if '_pick' in task.task_name:
+            if len(task.assignee.all()) != 0:
+                imgworkload = Img.objects.filter(tasks=task.belong_task, assignor=task.assignee.all()[0])
+                task.current_workload = len(imgworkload)
+                task.save()
+        else:
+            # 查询task_id
+            cursor.execute(
+                "select id, assignee_id from engine_task where name='{taskname}' order by id desc".format(
+                    taskname=task.task_name))
+            rows = cursor.fetchall()
+            if not rows:
+                continue
+            taskid = rows[0][0]
+            user_id = rows[0][1]
+            if user_id in user_ids:
+                user_name = user_ids[user_id]
+            else:
+                user_name = '未分配'
+
+            # 查询task下所属job_id
+            cursor.execute("select id from engine_segment where task_id=%s" % taskid)
+            job_ids = cursor.fetchall()
+            # 查询属于任务id的shape
+            exec_str = "select a.frame, a.type, (select b.name from engine_label as b where b.id=a.label_id) as label_name from engine_labeledshape as a where"
+            for job_id in job_ids:
+                exec_str = exec_str + ' job_id=%s or' % job_id[0]
+            exec_str = exec_str[:-3]
+            # 没有标准的任务
+            if not task.project.task_standard:
+                exec_str = exec_str + ' group by frame'
+                cursor.execute(exec_str)
+                images_finish = cursor.fetchall()
+                task.current_workload = len(images_finish)
+                task.save()
+            # 有标准的任务
+            else:
+                task_standard = task.project.task_standard.split(',')  # 任务标准
+                cursor.execute(exec_str)
+                images_finish = cursor.fetchall()
+                label_dict = {}
+                for ele in images_finish:
+                    label_n = ele[1]+'_'+ele[2]
+                    if label_n not in task_standard:
+                        continue
+                    if label_n not in label_dict:
+                        label_dict[label_n] = [ele[0]]
+                    else:
+                        label_dict[label_n].append(ele[0])
+                f = 0
+                ins = {}
+                for label_n in task_standard:
+                    # 标签不全
+                    if label_n not in label_dict:
+                        ins = {}
+                        break
+                    if f == 0:
+                        ins = set(label_dict[label_n])
+                        f = f + 1
+                    else:
+                        ins = ins & set(label_dict[label_n])
+                task.current_workload = len(ins)
+                task.save()
+        assignee_list = task.assignee.all()
+        if len(assignee_list) == 0:
+            assignee_name = '未分配任务'
+        else:
+            assignee_name = assignee_list[0].name
+        lastCount = Workload.objects.filter(task=task.task_name).aggregate(Sum('workcount'))
+        if not lastCount:
+            workcount = task.current_workload if task.current_workload else 0
+        else:
+            workcount = (task.current_workload if task.current_workload else 0) - (
+                lastCount['workcount__sum'] if lastCount['workcount__sum'] else 0)
+        if workcount == 0:
+            continue
+        Workload.objects.create(assignee=assignee_name, workcount=workcount,
+                                task=task.task_name, project_id=task.project.id,
+                                project_detail_name='{id}_{name}'.format(id=task.project.project_id,
+                                                                         name=task.project.project_name))
+
+    cursor.close()
+    conn.close()

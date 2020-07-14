@@ -52,6 +52,9 @@ class Project(models.Model):
                                           related_name='users_attend',
                                           verbose_name='参与人',
                                           blank=True)
+    task_standard = models.CharField(max_length=200, verbose_name='任务标准', blank=True, null=True)
+    basic_quantity = models.PositiveIntegerField(verbose_name='基础量', blank=True, null=True)
+
 
     def __str__(self):
         return self.project_id + '_' + self.project_name
