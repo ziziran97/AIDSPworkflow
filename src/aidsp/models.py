@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.utils import timezone
 # Create your models here.
 from datetime import datetime, timedelta
-
+from django.db.models.fields.related import ManyToManyField
 
 
 class Project(models.Model):
@@ -293,6 +293,15 @@ class Task(models.Model):
 
     class Mata:
         verbose_name = verbose_name_plural = '任务'
+
+    def to_dict(self):
+        data = {}
+        for f in self._meta.concrete_fields + self._meta.many_to_many:
+            value = f.value_from_object(self)
+            if isinstance(f, ManyToManyField):
+                value = [i.id for i in value] if self.pk else None
+            data[f.name] = value
+        return data
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):

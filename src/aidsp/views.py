@@ -7,7 +7,6 @@ import os
 from django.forms.models import model_to_dict
 from django.db.models import Q
 import json
-import shutil
 import urllib
 from django.conf import settings
 from django.db.models import Count
@@ -15,16 +14,14 @@ from django.utils import timezone
 from .cli.cvat import create_tasks
 import zipfile
 from selenium import webdriver
-import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import requests
 import urllib3
 from lxml import etree
-import netifaces
 from django.db.models import Sum
-
+import collections
 
 urllib3.disable_warnings()
 inside_url = 'http://' + settings.CVATURL + ':8084'
@@ -202,13 +199,25 @@ def get_dict(ele_model,rdata):
 # 获取任务信息
 def taskGet(request, id=None, type=None):
     if request.method == 'GET':
-        task_list = Task.objects.filter(project_id=id, task_type=type).order_by('task_name')
+        task_list = Task.objects.filter(project_id=id, task_type=type).order_by('id')
         rdata = {}
         # 添加任务信息到字典
-        for ele in task_list:
+        x = 0
+        for ele_model in task_list:
             # 按大任务分类
-            rdata = get_dict(ele, rdata)
-        return JsonResponse(rdata)
+            dict_ele = ele_model.to_dict()
+            # dict_ele = model_to_dict(ele_model)
+            # dict_ele.update({
+            #     'create_time': ele_model.create_time,
+            #     'assignee': [x.id for x in dict_ele['assignee']],
+            #     'reviewer': [x.id for x in dict_ele['reviewer']],
+            # })
+            if ele_model.belong_task not in rdata:
+                rdata[ele_model.belong_task] = [dict_ele]
+            else:
+                rdata[ele_model.belong_task].append(dict_ele)
+        result = collections.OrderedDict(sorted(rdata.items(), key=None, reverse=True))
+        return JsonResponse(result)
     else:
         return HttpResponse('不允许的请求方式！')
 
@@ -291,14 +300,14 @@ def tasksChange(request, id=None):
 # 获取个人任务
 def personalTasksGet(request):
     rdata = {
-            0: {},
-            1: {},
-            2: {},
-            3: {},
-            4: {},
-            5: {},
+            0: collections.OrderedDict(),
+            1: collections.OrderedDict(),
+            2: collections.OrderedDict(),
+            3: collections.OrderedDict(),
+            4: collections.OrderedDict(),
+            5: collections.OrderedDict(),
     }
-    rtask_list = Task.objects.filter(reviewer=request.user.id).order_by('task_name')
+    rtask_list = Task.objects.filter(reviewer=request.user.id).order_by('id')
     for ele in rtask_list:
         if ele.status == 5:
             rdata[1] = get_dict(ele, rdata[1])
@@ -309,14 +318,14 @@ def personalTasksGet(request):
             for tele in rdata[sele][bele]:
                 tele.update({'is_admin': True})
     adata = {
-        0: {},
-        1: {},
-        2: {},
-        3: {},
-        4: {},
-        5: {},
+        0: collections.OrderedDict(),
+        1: collections.OrderedDict(),
+        2: collections.OrderedDict(),
+        3: collections.OrderedDict(),
+        4: collections.OrderedDict(),
+        5: collections.OrderedDict(),
     }
-    atask_list = Task.objects.filter(assignee=request.user.id).order_by('task_name')
+    atask_list = Task.objects.filter(assignee=request.user.id).order_by('id')
     for ele in atask_list:
         if ele.status == 5:
             adata[1] = get_dict(ele, adata[1])
@@ -326,6 +335,7 @@ def personalTasksGet(request):
         for bele in adata[sele]:
             for tele in adata[sele][bele]:
                 tele.update({'is_admin': False})
+
     pdata = {
         'reviewer': rdata,
         'assignee': adata,
@@ -822,3 +832,5 @@ def task_standard_post(request):
         tproject.task_standard = None
     tproject.save()
     return HttpResponse('成功')
+
+
