@@ -14,8 +14,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
-from .views import Login, indexRedirect
+from django.urls import path, include, re_path
+from .views import Login
+from django.conf import settings
+from django.views import static
 
 
 urlpatterns = [
@@ -23,4 +25,6 @@ urlpatterns = [
     path('aidsp/', include('aidsp.urls')),
     path('aidsp/login/', Login),
     path('aidsp/workload/', include('workload.urls')),
+    re_path('aidsp/static/(?P<path>.*)', static.serve, {'document_root': settings.STATIC_ROOT}, name='static'),
 ]
+

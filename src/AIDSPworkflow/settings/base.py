@@ -17,4 +17,4 @@ INSTALLED_APPS = [
     'dwebsocket',
 ]
 AUTH_USER_MODEL = 'aidsp.User'
-WEBSOCKET_ACCEPT_ALL=True
+WEBSOCKET_ACCEPT_ALL = True
