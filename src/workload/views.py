@@ -33,7 +33,8 @@ def my_job():
         # 当为筛选任务时
         if '_pick' in task.task_name:
             if len(task.assignee.all()) != 0:
-                imgworkload = Img.objects.filter(tasks=task.belong_task, assignor=task.assignee.all()[0])
+                imgworkload = Img.objects.filter(~Q(status=None), tasks=task.belong_task,
+                                                 assignor=task.assignee.all()[0])
                 task.current_workload = len(imgworkload)
                 task.save()
         else:

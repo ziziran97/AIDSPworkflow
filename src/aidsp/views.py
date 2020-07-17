@@ -388,7 +388,7 @@ def postImg(request):
         rightImg = Img.objects.none()
         errorImg = Img.objects.none()
         noneImg = Img.objects.none()
-        for ele in json.loads(request.body):
+        for ele in json.loads(request.body.decode('utf-8')):
             if ele['status'] == 1:
                 errorImg = errorImg | Img.objects.filter(id=ele['id'])
             if ele['status'] == 0:
@@ -525,7 +525,11 @@ def taskCopy(request):
 # 获取图片任务信息
 def getImgTask(request):
     if request.method == 'POST':
-        mtask = request.user.assignee_task.filter(belong_task=urllib.parse.unquote(request.POST['belong_task'])).first()
+        if not request.POST['belong_task'].endswith('_pick'):
+            belong_task = request.POST['belong_task'] + '_pick'
+        else:
+            belong_task = request.POST['belong_task']
+        mtask = request.user.assignee_task.filter(belong_task=urllib.parse.unquote(belong_task)).first()
         value = model_to_dict(mtask)
         value.pop('assignee')
         value.pop('reviewer')
@@ -566,16 +570,16 @@ def getImgTask(request):
 
 # 导出正确结果
 def picRight(request, task_name=None):
-    mtask = Task.objects.filter(belong_task=task_name)
-    rightImgs = Img.objects.filter(status=0, tasks__in=mtask)
-    wrongImgs = Img.objects.filter(status=1, tasks__in=mtask)
+    if not task_name.endswith('_pick'):
+        task_name = task_name + '_pick'
+    ownImgs = Img.objects.filter(tasks=task_name)
     result = ''
-    for rightImg in rightImgs:
-        filename = os.path.basename(rightImg.url)
-        result = result + filename + ' Ture\n'
-    for wrongImg in wrongImgs:
-        filename = os.path.basename(wrongImg.url)
-        result = result + filename + ' False\n'
+    for eleImg in ownImgs:
+        filename = os.path.basename(eleImg.url)
+        if eleImg.status == 0:
+            result = result + filename + ' Ture\n'
+        if eleImg.status == 1:
+            result = result + filename + ' False\n'
     response = FileResponse(result)
     response['Content-Type'] = 'application/octet-stream'
     response['Content-Disposition'] = 'attachment; filename={0}.txt'.format(task_name)
