@@ -69,13 +69,26 @@ def my_job():
                 task.save()
             # 有标准的任务
             else:
-                exec_str = "select a.frame, a.type, (select b.name from engine_label as b where b.id=a.label_id) as label_name from engine_labeledshape as a where"
+                exec_str = "select a.frame, a.type, (select b.name from engine_label as b where b.id=a.label_id), a.points as label_name from engine_labeledshape as a where"
                 for job_id in job_ids:
                     exec_str = exec_str + ' job_id=%s or' % job_id[0]
                 exec_str = exec_str[:-3]
                 task_standard = task.project.task_standard.split(',')  # 任务标准
+                points_flag = False
+
                 cursor.execute(exec_str)
                 images_finish = cursor.fetchall()
+                for ele in task_standard:
+                    if 'POINTS' in ele:
+                        points_flag = True
+                        task_standard.remove(ele)
+                if points_flag:
+                    all_points = 0
+                    for ele in images_finish:
+                        if ele[1] == 'polygon':
+                            all_points += len(ele[3].split(','))/2
+                    task.current_points = all_points
+                    task.save()
                 label_dict = {}
                 for ele in images_finish:
                     label_n = ele[1]+'_'+ele[2]
@@ -104,15 +117,24 @@ def my_job():
             assignee_name = '未分配任务'
         else:
             assignee_name = assignee_list[0].name
+        # 点数
+        lastPointsCount = Workload.objects.filter(task=task.task_name).aggregate(Sum('pointscount'))
+        if not lastPointsCount:
+            pointscount = task.current_points if task.current_points else 0
+        else:
+            pointscount = (task.current_points if task.current_points else 0) - (
+                lastPointsCount['pointscount__sum'] if lastPointsCount['pointscount__sum'] else 0)
+        # 图片数
         lastCount = Workload.objects.filter(task=task.task_name).aggregate(Sum('workcount'))
         if not lastCount:
             workcount = task.current_workload if task.current_workload else 0
         else:
             workcount = (task.current_workload if task.current_workload else 0) - (
                 lastCount['workcount__sum'] if lastCount['workcount__sum'] else 0)
-        if workcount == 0:
+        if workcount == 0 and pointscount == 0:
             continue
         Workload.objects.create(assignee=assignee_name, workcount=workcount,
+                                pointscount=pointscount,
                                 task=task.task_name, project_id=task.project.id,
                                 project_detail_name='{id}_{name}'.format(id=task.project.project_id,
                                                                          name=task.project.project_name))
@@ -147,7 +169,8 @@ def workload_list(request):
     dayWorkload = Workload.objects.filter(task__in=tasklist, updated_date__date=datetime.date(int(request.POST['YY']),
                                                                                               int(request.POST['MM']),
                                                                                               int(request.POST['DD'])))
-    dayWorkloadList = dayWorkload.values('assignee').annotate(workload=Sum('workcount'))
+    dayWorkloadList = dayWorkload.values('assignee').annotate(workload=Sum('workcount'), pointsload=Sum('pointscount'))
+
     # 个人分时工作量
     # personWorkloadList = {}
     # personList = Workload.objects.filter().values_list('assignee').distinct()
@@ -160,10 +183,9 @@ def workload_list(request):
     #         if len(hourWorkload) == 0:
     #             continue
     #         personWorkloadList[person[0]].append({'hour': '%d时' % i, 'workload': hourWorkload[0][1]})
-
     dataAll = {
-        'dayInfo': sorted(list(dayWorkloadList), key=lambda x: x['workload'], reverse=False),
-        # 'housInfo': personWorkloadList
+        'picOrd': sorted(list(dayWorkloadList), key=lambda x: (x['workload'] if x['workload'] else 0), reverse=False),
+        'poiOrd': sorted(list(dayWorkloadList), key=lambda x: (x['pointsload'] if x['pointsload'] else 0), reverse=False),
     }
     return JsonResponse(dataAll, safe=False)
 
@@ -179,9 +201,10 @@ def hours_info(request):
                                                                                               int(request.POST['MM']),
                                                                                               int(request.POST['DD'])))
     personWorkloadList = []
-    hoursWorkload = dayWorkload.filter(assignee=request.POST['user']).values_list('updated_date__hour').annotate(workload=Sum('workcount'))
+    hoursWorkload = dayWorkload.filter(assignee=request.POST['user']).values_list('updated_date__hour').annotate(
+        workload=Sum('workcount'), pointsload=Sum('pointscount'))
     for elehour in hoursWorkload:
-        personWorkloadList.append({'hour': '%d时' % elehour[0], 'workload': elehour[1]})
+        personWorkloadList.append({'hour': '%d时' % elehour[0], 'workload': elehour[1], 'pointsload': elehour[2]})
     # for i in range(0, 24):
     #     hourWorkload = dayWorkload.filter(updated_date__hour=i, assignee=request.POST['user']).values_list('assignee')\
     #         .annotate(workload=Sum('workcount'))
