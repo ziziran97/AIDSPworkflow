@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from .models import Project, User, Label, QA, Reply, Dataset
+from .models import Project, User, Label, QA, Reply, Dataset, Task
+from workload.models import Workload
 # Create your views here.
 
 
@@ -94,3 +95,19 @@ class DatasetListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dataset
         fields = ['id', 'name', 'project', 'describe', 'create_time', 'update_time', 'quantity_detials', 'project_id']
+
+
+class TaskSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Task
+        fields = ['id', 'task_name', 'total_time', 'project', 'status', 'task_type', 'used_time',
+                  'task_link', 'current_workload', 'belong_task', 'quantity_available', 'done_time', 'create_time',
+                  'number_of_reviews', 'gross', 'time_label', 'begin_time', 'reviewer', 'assignee']
+
+
+class WorkloadSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Workload
+        fields = ['id', 'assignee', 'updated_date', 'workcount', 'task', 'project_detail_name', 'project_id']

@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.utils import timezone
 # Create your models here.
 from datetime import datetime, timedelta
-
+from django.db.models.fields.related import ManyToManyField
 
 
 class Project(models.Model):
@@ -263,6 +263,7 @@ class Task(models.Model):
     total_time = models.CharField(max_length=20, verbose_name='任务历时', blank=True, null=True)
     gross = models.IntegerField(verbose_name='此任务工作总量', blank=True, null=True)
     current_workload = models.IntegerField(verbose_name='实时工作量', blank=True, null=True)
+    current_points = models.IntegerField(verbose_name='实时点数', blank=True, null=True)
     quantity_available = models.IntegerField(verbose_name='此任务有效工作量', blank=True, null=True)
     status = models.PositiveSmallIntegerField(choices=STATUS, verbose_name='状态')
     number_of_reviews = models.PositiveSmallIntegerField(default=0, verbose_name='审核次数', blank=True, null=True)
@@ -293,6 +294,15 @@ class Task(models.Model):
 
     class Mata:
         verbose_name = verbose_name_plural = '任务'
+
+    def to_dict(self):
+        data = {}
+        for f in self._meta.concrete_fields + self._meta.many_to_many:
+            value = f.value_from_object(self)
+            if isinstance(f, ManyToManyField):
+                value = [i.id for i in value] if self.pk else None
+            data[f.name] = value
+        return data
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):

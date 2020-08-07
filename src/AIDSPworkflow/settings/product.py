@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ['*',]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     # 'django.middleware.csrf.CsrfViewMiddleware',
@@ -142,6 +143,7 @@ TIME_ZONE = 'Asia/Shanghai'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 STATIC_URL = '/aidsp/static/'
+STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'aidsp/static')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
     os.path.join(BASE_DIR, "../doc"),

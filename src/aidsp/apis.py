@@ -1,8 +1,10 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from .models import Project, User, Label, Document, QA, Reply, Dataset
+from .models import Project, User, Label, Document, QA, Reply, Dataset, Task
+from workload.models import Workload
 from .serializers import ProjectSerializer, ProjectDetailSerializer, UserSerializer, LabelSerializer, QASerializer, \
-    ProjectDisplaySerializer, ReplySerializer, DatasetSerializer, DatasetDetailSerializer, DatasetListSerializer
+    ProjectDisplaySerializer, ReplySerializer, DatasetSerializer, DatasetDetailSerializer, DatasetListSerializer, \
+    TaskSerializer, WorkloadSerializer
 from django.forms.models import model_to_dict
 from django.utils import timezone
 from django.db.models import Max
@@ -408,3 +410,13 @@ class DatasetViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class TaskViewSet(viewsets.ModelViewSet):
+    serializer_class = TaskSerializer
+    queryset = Task.objects.filter()
+
+
+class WorkloadViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkloadSerializer
+    queryset = Workload.objects.filter()
