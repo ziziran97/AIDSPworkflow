@@ -224,9 +224,13 @@ def hour_persons_info(request):
                                                                                               int(request.POST['MM']),
                                                                                               int(request.POST['DD'])))
     hourPersonsWorkload = dayWorkload.filter(updated_date__hour=request.POST['hour'].split('时')[0]).values('assignee') \
-        .annotate(workload=Sum('workcount'))
-    dataInfo = sorted(list(hourPersonsWorkload), key=lambda x: x['workload'], reverse=False)
-    return JsonResponse(dataInfo, safe=False)
+        .annotate(workload=Sum('workcount'), pointsload=Sum('pointscount'))
+    # dataInfo = sorted(list(hourPersonsWorkload), key=lambda x: x['workload'], reverse=False)
+    dataAll = {
+        'picOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['workload'] if x['workload'] else 0), reverse=False),
+        'poiOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['pointsload'] if x['pointsload'] else 0), reverse=False),
+    }
+    return JsonResponse(dataAll, safe=False)
 
 
 def get_daily_info(request):
@@ -234,12 +238,15 @@ def get_daily_info(request):
                                                                             int(request.POST['MM']),
                                                                             int(request.POST['DD'])),
                                            project_detail_name__isnull=False).\
-                        values('assignee', 'project_detail_name', 'project_id').annotate(workload=Sum('workcount'))
+                        values('assignee', 'project_detail_name', 'project_id').annotate(
+        workload=Sum('workcount'), pointsload=Sum('pointscount'))
+
     daily_info_ori = {}
     for ele_workload in workload_set:
         if ele_workload['assignee'] not in daily_info_ori:
             daily_info_ori[ele_workload['assignee']] = [{'project': ele_workload['project_detail_name'],
-                                                        'workload': ele_workload['workload'],
+                                                        'workload': ele_workload['pointsload'] if
+                                                        ele_workload['pointsload'] else ele_workload['workload'],
                                                          'project_id': ele_workload['project_id'],
                                                          'basic_quantity':Project.objects.get(
                                                                  id=ele_workload['project_id']).basic_quantity}]
