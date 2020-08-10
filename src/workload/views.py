@@ -201,16 +201,11 @@ def hours_info(request):
                                                                                               int(request.POST['MM']),
                                                                                               int(request.POST['DD'])))
     personWorkloadList = []
-    hoursWorkload = dayWorkload.filter(assignee=request.POST['user']).values_list('updated_date__hour').annotate(
+    hoursWorkload = dayWorkload.filter(assignee=request.POST['user']).values('updated_date__hour').annotate(
         workload=Sum('workcount'), pointsload=Sum('pointscount'))
     for elehour in hoursWorkload:
-        personWorkloadList.append({'hour': '%d时' % elehour[0], 'workload': elehour[1], 'pointsload': elehour[2]})
-    # for i in range(0, 24):
-    #     hourWorkload = dayWorkload.filter(updated_date__hour=i, assignee=request.POST['user']).values_list('assignee')\
-    #         .annotate(workload=Sum('workcount'))
-    #     if len(hourWorkload) == 0:
-    #         continue
-    #     personWorkloadList.append({'hour': '%d时' % i, 'workload': hourWorkload[0][1]})
+        personWorkloadList.append({'hour': '%d时' % elehour['updated_date__hour'], 'workload': elehour['workload'],
+                                   'pointsload': elehour['pointsload']})
     return JsonResponse(personWorkloadList, safe=False)
 
 
@@ -273,3 +268,96 @@ def scd_switch(request):
     else:
         return HttpResponse('您不是超级用户')
 
+
+def task_workload(request, task_name=None):
+    conn = psycopg2.connect(database='cvat', user='root',
+                            password='', host='172.17.0.1',
+                            port='65432')
+    print('连接完成')
+    result = {}
+    cursor = conn.cursor()
+    try:
+        task = Task.objects.get(task_name=task_name)
+    except:
+        return JsonResponse({'info': 'aidsp不存在任务' + task_name}, safe=False)
+    # 当为筛选任务时
+    if '_pick' in task.task_name:
+        if len(task.assignee.all()) != 0:
+            imgworkload = Img.objects.filter(~Q(status=None), tasks=task.belong_task,
+                                             assignor=task.assignee.all()[0])
+            result.update({'current_workload': len(imgworkload)})
+        else:
+            return JsonResponse({'info': '该任务尚未分配'}, safe=False)
+
+    else:
+        # 查询task_id
+        cursor.execute(
+            "select id, assignee_id from engine_task where name='{taskname}' order by id desc".format(
+                taskname=task.task_name))
+        rows = cursor.fetchall()
+        if not rows:
+            return JsonResponse({'info': 'cvat不存在任务' + task_name}, safe=False)
+
+        taskid = rows[0][0]
+        user_id = rows[0][1]
+
+        # 查询task下所属job_id
+        cursor.execute("select id from engine_segment where task_id=%s" % taskid)
+        job_ids = cursor.fetchall()
+
+        # 没有标准的任务
+        if not task.project.task_standard:
+            exec_str = "select frame from engine_labeledshape where"
+            for job_id in job_ids:
+                exec_str = exec_str + ' job_id=%s or' % job_id[0]
+            exec_str = exec_str[:-3]
+            exec_str = exec_str + ' group by frame'
+            cursor.execute(exec_str)
+            images_finish = cursor.fetchall()
+            result.update({'current_workload': len(images_finish)})
+        # 有标准的任务
+        else:
+            exec_str = "select a.frame, a.type, (select b.name from engine_label as b where b.id=a.label_id), a.points as label_name from engine_labeledshape as a where"
+            for job_id in job_ids:
+                exec_str = exec_str + ' job_id=%s or' % job_id[0]
+            exec_str = exec_str[:-3]
+            task_standard = task.project.task_standard.split(',')  # 任务标准
+            points_flag = False
+
+            cursor.execute(exec_str)
+            images_finish = cursor.fetchall()
+            for ele in task_standard:
+                if 'POINTS' in ele:
+                    points_flag = True
+                    task_standard.remove(ele)
+            if points_flag:
+                all_points = 0
+                for ele in images_finish:
+                    if ele[1] == 'polygon':
+                        all_points += len(ele[3].split(',')) / 2
+                result.update({'current_points': all_points})
+            label_dict = {}
+            for ele in images_finish:
+                label_n = ele[1] + '_' + ele[2]
+                if label_n not in task_standard:
+                    continue
+                if label_n not in label_dict:
+                    label_dict[label_n] = [ele[0]]
+                else:
+                    label_dict[label_n].append(ele[0])
+            f = 0
+            ins = {}
+            for label_n in task_standard:
+                # 标签不全
+                if label_n not in label_dict:
+                    ins = {}
+                    break
+                if f == 0:
+                    ins = set(label_dict[label_n])
+                    f = f + 1
+                else:
+                    ins = ins & set(label_dict[label_n])
+            result.update({'current_workload': len(ins)})
+    cursor.close()
+    conn.close()
+    return JsonResponse(result, safe=False)

@@ -17,6 +17,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.select import Select
 import requests
 import urllib3
 from lxml import etree
@@ -673,7 +674,9 @@ def change_assignee(driver, task_name, assignee):
     tn = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.LINK_TEXT, task_name)))
     tn.click()
     ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_assignee')))
-    ass.send_keys(assignee)
+    ass = Select(ass)
+    ass.select_by_visible_text(assignee)
+    # ass.send_keys(assignee)
     save = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, '_save')))
     save.click()
     wait = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator')))
@@ -684,7 +687,9 @@ def change_owner(driver, task_name, owner):
     tn = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.LINK_TEXT, task_name)))
     tn.click()
     ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_owner')))
-    ass.send_keys(owner)
+    ass = Select(ass)
+    ass.select_by_visible_text(owner)
+    # ass.send_keys(owner)
     save = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, '_save')))
     save.click()
     wait = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator')))
