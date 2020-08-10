@@ -201,16 +201,11 @@ def hours_info(request):
                                                                                               int(request.POST['MM']),
                                                                                               int(request.POST['DD'])))
     personWorkloadList = []
-    hoursWorkload = dayWorkload.filter(assignee=request.POST['user']).values_list('updated_date__hour').annotate(
+    hoursWorkload = dayWorkload.filter(assignee=request.POST['user']).values('updated_date__hour').annotate(
         workload=Sum('workcount'), pointsload=Sum('pointscount'))
     for elehour in hoursWorkload:
-        personWorkloadList.append({'hour': '%d时' % elehour[0], 'workload': elehour[1], 'pointsload': elehour[2]})
-    # for i in range(0, 24):
-    #     hourWorkload = dayWorkload.filter(updated_date__hour=i, assignee=request.POST['user']).values_list('assignee')\
-    #         .annotate(workload=Sum('workcount'))
-    #     if len(hourWorkload) == 0:
-    #         continue
-    #     personWorkloadList.append({'hour': '%d时' % i, 'workload': hourWorkload[0][1]})
+        personWorkloadList.append({'hour': '%d时' % elehour['updated_date__hour'], 'workload': elehour['workload'],
+                                   'pointsload': elehour['pointsload']})
     return JsonResponse(personWorkloadList, safe=False)
 
 
