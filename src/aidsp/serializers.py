@@ -110,4 +110,4 @@ class WorkloadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workload
-        fields = ['id', 'assignee', 'updated_date', 'workcount', 'task', 'project_detail_name', 'project_id']
+        fields = ['id', 'assignee', 'updated_date', 'workcount', 'pointscount', 'task', 'project_detail_name', 'project_id']

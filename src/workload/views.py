@@ -247,7 +247,8 @@ def get_daily_info(request):
                                                                  id=ele_workload['project_id']).basic_quantity}]
         else:
             daily_info_ori[ele_workload['assignee']].append({'project': ele_workload['project_detail_name'],
-                                                            'workload': ele_workload['workload'],
+                                                            'workload': ele_workload['pointsload'] if
+                                                        ele_workload['pointsload'] else ele_workload['workload'],
                                                              'project_id': ele_workload['project_id'],
                                                              'basic_quantity': Project.objects.get(
                                                                  id=ele_workload['project_id']).basic_quantity})
