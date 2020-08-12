@@ -23,6 +23,8 @@ import urllib3
 from lxml import etree
 from django.db.models import Sum
 import collections
+from dwebsocket.decorators import accept_websocket
+
 
 urllib3.disable_warnings()
 inside_url = 'http://' + settings.CVATURL + ':8084'
@@ -58,8 +60,10 @@ def dataset_display(request, id=None):
 def dataset_detail(request, id=None):
     return render(request, 'dataset_detail.html')
 
+
 def pic_screen(request,task_name=None):
     return render(request, 'pic_screen.html')
+
 
 def dataset_fileupload(request):
     filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
@@ -616,7 +620,7 @@ def hTagList(it, level, n):
 
         if int(n.tag[1:2]) > level:
             ren = hTagList(it=it, level=int(n.tag[1:2]), n=n)
-            hlist[-1]['children']=ren['list']
+            hlist[-1]['children'] = ren['list']
             n = ren['n']
             continue
 
@@ -737,8 +741,6 @@ def percentage_workload(request, id=None):
     }
     return JsonResponse(dataAll, safe=False)
 
-
-from dwebsocket.decorators import accept_websocket
 
 #  创建任务长连接
 @accept_websocket

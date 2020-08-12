@@ -15,7 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from workload.views import workload_list, hours_info, hour_persons_info, get_daily_info, scd_switch, task_workload
+from workload.views import workload_list, hours_info, hour_persons_info, get_daily_info, scd_switch, task_workload, \
+    real_time_job, get_updated_time
 urlpatterns = [
     path('', workload_list),
     path('hoursinfo/', hours_info),
@@ -23,4 +24,7 @@ urlpatterns = [
     path('dailyinfo/', get_daily_info),
     path('scdenable', scd_switch),
     path('taskworkload/<task_name>', task_workload),
+    path('realtimejob', real_time_job),
+    path('getupdatedtime', get_updated_time),
+
 ]
