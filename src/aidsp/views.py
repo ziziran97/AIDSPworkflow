@@ -819,7 +819,7 @@ def socket_tasksupload(request):
                             i = i - 1
                             break
                     if i == -1:
-                        request.websocket.send(('文件夹内格式无措').encode('utf-8'))
+                        request.websocket.send(('文件夹内格式错误').encode('utf-8'))
                     elif i == 0:
                         request.websocket.send(('没有可以创建的任务').encode('utf-8'))
                     else:
