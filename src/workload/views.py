@@ -141,6 +141,9 @@ def my_job():
 
     cursor.close()
     conn.close()
+    last_data = Workload.objects.filter().last()
+    last_data.lastid = last_data.id
+    last_data.save()
 
 
 # 开启定时工作
@@ -157,9 +160,7 @@ def scheable():
         print(e)
         # scheduler.shutdown()
     my_job()
-    last_data = Workload.objects.filter().last()
-    last_data.lastid = last_data.id
-    last_data.save()
+
 
 def workload_list(request):
     # 项目任务查询
@@ -369,9 +370,6 @@ def task_workload(request, task_name=None):
 def real_time_job(request):
     if request.user.is_superuser:
         my_job()
-        last_data = Workload.objects.filter().last()
-        last_data.lastid = last_data.id
-        last_data.save()
         return HttpResponse('更新完毕')
     else:
         return HttpResponse('您不是超级用户', status=403)
