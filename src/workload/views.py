@@ -157,7 +157,9 @@ def scheable():
         print(e)
         # scheduler.shutdown()
     my_job()
-
+    last_data = Workload.objects.filter().last()
+    last_data.lastid = last_data.id
+    last_data.save()
 
 def workload_list(request):
     # 项目任务查询
@@ -267,7 +269,7 @@ def scd_switch(request):
         settings.SCHEDULETENABLE = True
         return HttpResponse('定时任务开启完成')
     else:
-        return HttpResponse('您不是超级用户')
+        return HttpResponse('您不是超级用户', status=403)
 
 
 def task_workload(request, task_name=None):
@@ -362,3 +364,19 @@ def task_workload(request, task_name=None):
     cursor.close()
     conn.close()
     return JsonResponse(result, safe=False)
+
+
+def real_time_job(request):
+    if request.user.is_superuser:
+        my_job()
+        last_data = Workload.objects.filter().last()
+        last_data.lastid = last_data.id
+        last_data.save()
+        return HttpResponse('更新完毕')
+    else:
+        return HttpResponse('您不是超级用户', status=403)
+
+
+def get_updated_time(request):
+    last_data = Workload.objects.filter(~Q(lastid=None)).last()
+    return JsonResponse({'updated_time': last_data.updated_date.strftime('%Y-%m-%d %H:%M:%S')}, safe=False)
