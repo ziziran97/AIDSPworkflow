@@ -232,10 +232,12 @@ def tasksChange(request, id=None):
     if request.method == 'POST':
         mtask = Task.objects.get(id=request.POST['id'])
         if 'assignee' in request.POST:
-            mtask.assignee.clear()
+            # mtask.assignee.clear()
             if request.POST['assignee']:
                 adict = request.POST['assignee'].split(',')
                 for ele in adict:
+                    if mtask.assignee.all():
+                        return HttpResponse("任务已被分配", status=403)
                     mtask.assignee.clear()
                     mtask.assignee.add(ele)
                     if mtask.task_link.startswith('https'):
@@ -258,12 +260,15 @@ def tasksChange(request, id=None):
                             driver.quit()
                             return HttpResponse("未找到任务", status=500)
                         driver.quit()
+            else:
+                mtask.assignee.clear()
 
         if 'reviewer' in request.POST:
-            mtask.reviewer.clear()
             if request.POST['reviewer']:
                 rdict = request.POST['reviewer'].split(',')
                 for ele in rdict:
+                    if mtask.reviewer.all():
+                        return HttpResponse("任务已被分配", status=403)
                     mtask.reviewer.clear()
                     mtask.reviewer.add(ele)
                     if mtask.task_link.startswith('https'):
@@ -286,6 +291,9 @@ def tasksChange(request, id=None):
                             driver.quit()
                             return HttpResponse("未找到任务", status=500)
                         driver.quit()
+            else:
+                mtask.reviewer.clear()
+
         if 'status' in request.POST:
             mtask.status = request.POST['status']
             mtask.save()
