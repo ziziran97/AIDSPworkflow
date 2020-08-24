@@ -299,6 +299,9 @@ class Task(models.Model):
         data = {}
         for f in self._meta.concrete_fields + self._meta.many_to_many:
             value = f.value_from_object(self)
+            if f.name == 'status':
+                status_dict = dict(f.choices)
+                value = status_dict[value]
             if isinstance(f, ManyToManyField):
                 value = [i.id for i in value] if self.pk else None
             data[f.name] = value
