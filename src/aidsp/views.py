@@ -1,4 +1,3 @@
-from django.db.models import QuerySet
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import render, HttpResponse, HttpResponseRedirect
 from .models import Project, Task, User, Img
@@ -8,7 +7,6 @@ from django.db.models import Q
 import json
 import urllib
 from django.conf import settings
-from django.db.models import Count
 from django.utils import timezone
 from .cli.cvat import create_tasks
 import zipfile
@@ -75,7 +73,7 @@ def dataset_fileupload(request):
     with open(os.path.join(filedir, filename), 'wb') as f:
         for chunk in request.FILES['file'].chunks():
             f.write(chunk)
-
+    # 上传后自动解压
     r = zipfile.is_zipfile(os.path.join(filedir, filename))
     if r:
         fz = zipfile.ZipFile(os.path.join(filedir, filename), 'r')
@@ -174,7 +172,7 @@ def taskPost(request):
 
 
 # 模型转换字典
-def get_dict(ele_model,rdata):
+def get_dict(ele_model, rdata):
     if ele_model.belong_task not in rdata:
         dict_ele = model_to_dict(ele_model)
 
@@ -214,12 +212,10 @@ def taskGet(request, id=None, type=None):
     :param type:任务类型（采集或标注）
     :return:
     """
-
     if request.method == 'GET':
         task_list = Task.objects.filter(project_id=id, task_type=type).order_by('id')
         rdata = {}
         # 添加任务信息到字典
-        x = 0
         for ele_model in task_list:
             # 按大任务分类
             dict_ele = ele_model.to_dict()
@@ -437,7 +433,7 @@ def postImg(request):
 
 def finishImg(request, task_name=None):
     """
-    查找已完成图片
+    显示已完成图片
     """
     mtask = Task.objects.get(task_name=task_name)
     left = Img.objects.filter(~Q(status=None), assignor=request.user, tasks=mtask)
@@ -472,7 +468,9 @@ def showFileList(request):
                     'title': file if file not in task_list else '(已添加)' + file,
                     'key': file,
                     'children': appendFile(os.path.join(dir, file)) if file not in task_list else None,
-                    'selectable': True if dir == os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile') and (file not in task_list) else False
+                    'selectable': True if dir == os.path.join(os.path.dirname(settings.BASE_DIR),
+                                                              'aidsp/static/imgFile') and
+                                          (file not in task_list) else False
                 })
             else:
                 if file != '.gitignore' and not file.endswith('.zip'):
@@ -502,7 +500,8 @@ def tasksUpload(request):
 
             mpid = Project.objects.get(id=request.POST['project'])
             # 创建任务
-            ntask = Task.objects.create(project=mpid, task_name=request.POST['task'], task_link='/aidsp/screen/'+request.POST['task'],
+            ntask = Task.objects.create(project=mpid, task_name=request.POST['task'],
+                                        task_link='/aidsp/screen/'+request.POST['task'],
                                         gross=len(os.listdir(taskdir)), status=0, belong_task=request.POST['task'],
                                         task_type=request.POST['task_type'])
             # 添加图片
@@ -512,7 +511,7 @@ def tasksUpload(request):
                 img_list.append(img)
             Img.objects.bulk_create(img_list)
             return HttpResponse('添加完成')
-        #标注任务
+        # 标注任务
         elif request.POST['type'] == 'tagging':
             auth = 'cvat:cvat_Cpv17d0Da2'
             # create_tasks_files()
@@ -647,34 +646,34 @@ def workloadRm(request):
 
 def hTagList(it, level, n):
     """
-    递归调用显示文档标题列表
+    获取文档标题列表字典列表
+    :param it: 文档标题迭代器
+    :param level: 指定标题等级
+    :param n: 当前标题
+    :return: 文档标题列表字典列表
     """
     hlist = []
     while True:
         if n is None:
             return {'list': hlist, 'n': None}
 
-        # print('当前等级（%d）,当前文档（%s）,标签等级（%s）' % (level, n.xpath('string(.)'),n.tag))
+        # 当标题与指定标题等级一致时，平级添加字典
         if int(n.tag[1:2]) == level:
-            hlist.append({'title':n.xpath('string(.)'),'children': []})
+            hlist.append({'title': n.xpath('string(.)'), 'children': []})
             try:
                 n = it.__next__()
-                continue
-            except Exception as e:
+            except StopIteration:
                 return {'list': hlist, 'n': None}
 
-        if int(n.tag[1:2]) > level:
+        # 当标题等级大于指定标题等级时，该标题往下所有大于指定标题等级的节点归为上一个标题子节点
+        elif int(n.tag[1:2]) > level:
             ren = hTagList(it=it, level=int(n.tag[1:2]), n=n)
             hlist[-1]['children'] = ren['list']
             n = ren['n']
-            continue
 
-        if int(n.tag[1:2]) < level:
-            return {'list': hlist, 'n': n }
-            break
-        break
-
-    return {'list': hlist, 'n': n}
+        # 当标题等级小于指定标题时，返回获得的所有标题
+        elif int(n.tag[1:2]) < level:
+            return {'list': hlist, 'n': n}
 
 
 def mdView(request, filename=None):
@@ -682,7 +681,6 @@ def mdView(request, filename=None):
     显示文档
     """
     mddir = os.path.join(os.path.dirname(settings.BASE_DIR), 'doc')
-
     # 直接读html
     mdfile = os.path.join(mddir, filename + '.html')
     if not os.path.exists(mdfile):
@@ -691,15 +689,12 @@ def mdView(request, filename=None):
         text = f.read()
     html = text
     text = text.replace('images/', '/aidsp/static/').replace('images\\', '/aidsp/static/')
-
     html = etree.HTML(html)
     h1_list = html.xpath('//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6]')
     for ele in h1_list:
         old_ele = etree.tostring(ele).decode('utf-8')
         new_ele = old_ele.replace('<span>', '<span id="%s">' % ele.xpath('string(.)'))
-
         text = text.replace(old_ele, new_ele)
-
     return HttpResponse(text)
 
 
@@ -715,6 +710,7 @@ def mdList(requests):
             with open(mdfile, 'r', encoding='utf-8') as f:
                 text = f.read()
             html = etree.HTML(text)
+            # 获取所有标题
             h1_list = html.xpath('//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6]')
             it = iter(h1_list)
             n = it.__next__()
@@ -733,7 +729,6 @@ def change_assignee(driver, task_name, assignee):
     ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_assignee')))
     ass = Select(ass)
     ass.select_by_visible_text(assignee)
-    # ass.send_keys(assignee)
     save = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, '_save')))
     save.click()
     wait = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator')))
@@ -749,7 +744,6 @@ def change_owner(driver, task_name, owner):
     ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_owner')))
     ass = Select(ass)
     ass.select_by_visible_text(owner)
-    # ass.send_keys(owner)
     save = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, '_save')))
     save.click()
     wait = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator')))
@@ -774,7 +768,7 @@ def signin():
         'password': 'cvat_Cpv17d0Da2',
         'next': '/admin/',
     }
-    adres = ss.post(admin_url, verify=False, data=data)
+    ss.post(admin_url, verify=False, data=data)
     print('登录完毕')
     return ss.cookies
 
@@ -785,11 +779,11 @@ def percentage_workload(request, id=None):
     """
     task_query = Project.objects.get(id=id).project_task.all()
     all_percentage1 = task_query.filter(task_type=1).aggregate(current_workload=Sum('current_workload'),
-                                          quantity_available=Sum('quantity_available'),
-                                          gross=Sum('gross'))
+                                                               quantity_available=Sum('quantity_available'),
+                                                               gross=Sum('gross'))
     all_percentage2 = task_query.filter(task_type=2).aggregate(current_workload=Sum('current_workload'),
-                                          quantity_available=Sum('quantity_available'),
-                                          gross=Sum('gross'))
+                                                               quantity_available=Sum('quantity_available'),
+                                                               gross=Sum('gross'))
     each_percentage_query = task_query.values('belong_task').annotate(current_workload=Sum('current_workload'),
                                                                       quantity_available=Sum('quantity_available'),
                                                                       gross=Sum('gross'))
@@ -839,10 +833,9 @@ def socket_tasksupload(request):
                     Img.objects.bulk_create(img_list)
                     request.websocket.send('添加完成'.encode('utf-8'))
                     return
-                #标注任务
+                # 标注任务
                 elif post_data['type'] == 'tagging':
                     auth = 'cvat:cvat_Cpv17d0Da2'
-                    # create_tasks_files()
                     task_name = post_data['task']
                     imgdir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
                     cli_path = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/cli/cli.py')
@@ -874,16 +867,16 @@ def socket_tasksupload(request):
                                                 task_link=task_link,
                                                 gross=ele['size'], status=0, belong_task=post_data['task'],
                                                 task_type=post_data['task_type'])
-                        except StopIteration as e:
+                        except StopIteration:
                             break
                         except Exception as e:
                             print(e)
                             i = i - 1
                             break
                     if i == -1:
-                        request.websocket.send(('文件夹内格式错误').encode('utf-8'))
+                        request.websocket.send('文件夹内格式错误'.encode('utf-8'))
                     elif i == 0:
-                        request.websocket.send(('没有可以创建的任务').encode('utf-8'))
+                        request.websocket.send('没有可以创建的任务'.encode('utf-8'))
                     else:
                         request.websocket.send(('添加完成 %d/%d' % (i, count)).encode('utf-8'))
             except Exception as e:
@@ -908,5 +901,4 @@ def task_standard_post(request):
         tproject.task_standard = None
     tproject.save()
     return HttpResponse('成功')
-
 

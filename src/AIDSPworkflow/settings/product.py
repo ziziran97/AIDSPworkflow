@@ -25,7 +25,7 @@ SECRET_KEY = 'nk5&hv!8(s_7bvvw=**hc-xd4k)4u%iryt1n7*ztpv11d-&b43'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*',]
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -80,8 +80,7 @@ ROOT_URLCONF = 'AIDSPworkflow.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')]
-        ,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

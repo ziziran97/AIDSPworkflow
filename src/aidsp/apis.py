@@ -15,10 +15,6 @@ from django.db.models import Q
 class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     queryset = Project.objects.filter()
-    # permisson_classes = [IsAdminUser]
-
-    # def list(self):
-    #     return super().list()
 
     def retrieve(self, request, *args, **kwargs):
         if kwargs['pk'] == 'newproject':
@@ -32,6 +28,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         ndata = dict(serializer.data)
+        # 显示三个文档
         try:
             dqueryset = Document.objects.get(id=ndata['requirement_documents'])
             qas = dqueryset.qa_set.all()
@@ -40,9 +37,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 qalist.append(model_to_dict(qa))
             ndata['req_doc'] = dqueryset.content
             ndata['req_qa'] = qalist
-        except Exception as e:
-            print(e)
-        try:
             dqueryset = Document.objects.get(id=ndata['collection_documents'])
             qas = dqueryset.qa_set.all()
             qalist = []
@@ -50,9 +44,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 qalist.append(model_to_dict(qa))
             ndata['col_doc'] = dqueryset.content
             ndata['col_qa'] = qalist
-        except Exception as e:
-            print(e)
-        try:
             dqueryset = Document.objects.get(id=ndata['labeling_documents'])
             qas = dqueryset.qa_set.all()
             qalist = []
@@ -111,7 +102,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
             else:
                 project_mo.collection_documents.content = data['collection_documents']
                 project_mo.collection_documents.save()
-
         if data['labeling_documents']:
             if not project_mo.labeling_documents:
                 project_mo.labeling_documents = Document.objects.create(type=2, content=data['labeling_documents'])
@@ -156,6 +146,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             if ele != '':
                 data.update({'users_attend': int(ele)})
         bdata = {}
+        pass
         bdata['requirement_documents'] = data['requirement_documents']
         bdata['collection_documents'] = data['collection_documents']
         bdata['labeling_documents'] = data['labeling_documents']
@@ -235,7 +226,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             'project_id': '0',
             'project_name': '空闲',
             'now_person': all_user,
-            'status': '未开始准备中数据采集数据标注暂停完结',
+            'status': '未开始准备中数据采集数据标注暂停完结',  # 保证筛选时不会被过滤
             "labels": [],
             "users_found": [],
             "users_manager": [],
@@ -243,8 +234,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         })
 
-        # print(serializer.data)
-        # pdata.append({'remaining_time'})
         return Response(pdata[::-1])
 
 
@@ -262,7 +251,7 @@ class QAViewSet(viewsets.ModelViewSet):
     serializer_class = QASerializer
     queryset = QA.objects.filter()
 
-    def create(self, request, *args, **kwargs ):
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         qaobj = QA.objects.create(author=serializer.data['author'],
@@ -272,7 +261,6 @@ class QAViewSet(viewsets.ModelViewSet):
                                   documents=Document.objects.get(id=serializer.data['documents']),
                                   )
         qaobj.save()
-        # self.perform_create(serializer)
         pdata = dict(serializer.data)
         pdata.update({'id': qaobj.id})
         headers = self.get_success_headers(serializer.data)
@@ -292,6 +280,7 @@ class ProjectdisplayViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         ndata = dict(serializer.data)
+        # 获取文档与评论
         try:
             dqueryset = Document.objects.get(id=ndata['requirement_documents'])
             qas = dqueryset.qa_set.all()
@@ -306,9 +295,6 @@ class ProjectdisplayViewSet(viewsets.ModelViewSet):
             ndata['req_qa'] = qalist
             ndata['req_doc'] = dqueryset.content
 
-        except Exception as e:
-            print(e)
-        try:
             dqueryset = Document.objects.get(id=ndata['collection_documents'])
             qas = dqueryset.qa_set.all()
             qalist = []
@@ -322,9 +308,6 @@ class ProjectdisplayViewSet(viewsets.ModelViewSet):
             ndata['col_qa'] = qalist
             ndata['col_doc'] = dqueryset.content
 
-        except Exception as e:
-            print(e)
-        try:
             dqueryset = Document.objects.get(id=ndata['labeling_documents'])
             qas = dqueryset.qa_set.all()
             qalist = []
@@ -356,7 +339,7 @@ class ProjectdisplayViewSet(viewsets.ModelViewSet):
             partc.users_attend.set(usesalist)
             partc.save()
 
-            return Response(['成功？'])
+            return Response(['成功'])
         return Response(['do nothing'])
 
 

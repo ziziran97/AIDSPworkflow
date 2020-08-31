@@ -1,8 +1,6 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-# Create your models here.
-from datetime import datetime, timedelta
 from django.db.models.fields.related import ManyToManyField
 
 
@@ -10,9 +8,7 @@ class Project(models.Model):
 
     id = models.AutoField(primary_key=True)
     project_id = models.CharField(max_length=50, verbose_name='项目id')
-    # project_id = models.IntegerField(unique=True, auto_created=True, verbose_name='项目id', blank=True, null=True)
     project_name = models.CharField(max_length=50, verbose_name='项目名称')
-    # tasks = models.ForeignKey(to='Task', to_field='project', related_name='project', on_delete=models.SET_NULL, verbose_name='任务')
     status = models.CharField(max_length=20, verbose_name='状态')
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     end_time = models.DateTimeField(verbose_name='结束时间', blank=True, null=True)
@@ -27,10 +23,10 @@ class Project(models.Model):
                                                  verbose_name='需求文档', related_name='需求文档',
                                                  blank=True, null=True)
     collection_documents = models.OneToOneField('Document', on_delete=models.CASCADE,
-                                                 verbose_name='采集文档', related_name='采集文档',
+                                                verbose_name='采集文档', related_name='采集文档',
                                                 blank=True, null=True)
     labeling_documents = models.OneToOneField('Document', on_delete=models.CASCADE,
-                                                 verbose_name='标注文档', related_name='标注文档',
+                                              verbose_name='标注文档', related_name='标注文档',
                                               blank=True, null=True)
     # datasets = models.ManyToManyField(to='Dataset', related_name='project', verbose_name='数据集')
     quantity_week = models.CharField(max_length=100, verbose_name='本周工作量', blank=True, null=True)
@@ -55,7 +51,6 @@ class Project(models.Model):
     task_standard = models.CharField(max_length=200, verbose_name='任务标准', blank=True, null=True)
     basic_quantity = models.PositiveIntegerField(verbose_name='基础量', blank=True, null=True)
 
-
     def __str__(self):
         return self.project_id + '_' + self.project_name
 
@@ -68,14 +63,11 @@ class Project(models.Model):
                 self.end_time = timezone.now()
         except:
             pass
-        super().save(force_insert=False, force_update=False, using=None,
-             update_fields=None)
+        super().save(force_insert=False, force_update=False, using=None, update_fields=None)
 
     class Mata:
         verbose_name = verbose_name_plural = '项目'
         ordering = 'id'
-
-
 
 
 class Document(models.Model):
@@ -333,7 +325,8 @@ class Task(models.Model):
                     self.used_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
                 else:
                     t = timezone.now() - self.time_label
-                    old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
+                    old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + \
+                                    int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
                     d = int(self.used_time.split('天')[0]) + t.days
                     new_used_time = t.seconds + old_used_time
                     if new_used_time > 24 * 3600:
@@ -349,7 +342,8 @@ class Task(models.Model):
                     self.used_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
                 else:
                     t = timezone.now() - self.time_label
-                    old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
+                    old_used_time = int(self.used_time.split('天')[1].split('小时')[0]) * 3600 + \
+                                    int(self.used_time.split('天')[1].split('小时')[1].split('分钟')[0]) * 60
                     d = int(self.used_time.split('天')[0]) + t.days
                     new_used_time = t.seconds + old_used_time
                     self.used_time = '%d天%d小时%d分钟' % (d, new_used_time/3600, new_used_time % 3600 / 60)
@@ -358,7 +352,7 @@ class Task(models.Model):
                     self.done_time = timezone.now()
                     t = timezone.now() - self.begin_time
                     self.total_time = '%d天%d小时%d分钟' % (t.days, t.seconds / 3600, t.seconds % 3600 / 60)
-            # 当通过和不通过
+            # 当通过和不通过时审核次数加一
             if oldT.status != int(self.status) == 3 or oldT.status != int(self.status) == 4:
                 self.number_of_reviews = self.number_of_reviews + 1
         super().save(force_insert=False, force_update=False, using=None, update_fields=None)
@@ -391,14 +385,14 @@ class Img(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     url = models.CharField(max_length=100, verbose_name='链接')
     assignor = models.ForeignKey(to='User',
-                               to_field='name',
-                               verbose_name='姓名',
-                               on_delete=models.DO_NOTHING, blank=True, null=True)
+                                 to_field='name',
+                                 verbose_name='姓名',
+                                 on_delete=models.DO_NOTHING, blank=True, null=True)
     status = models.PositiveSmallIntegerField(choices=STATUS, verbose_name='状态', blank=True, null=True)
     tasks = models.ForeignKey(to='Task',
                               to_field='task_name',
                               verbose_name='所属任务',
-                               on_delete=models.CASCADE)
+                              on_delete=models.CASCADE)
 
     class Mata:
         verbose_name = verbose_name_plural = '图片库'

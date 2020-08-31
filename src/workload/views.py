@@ -2,7 +2,6 @@ from django.shortcuts import render, HttpResponse
 from workload.models import Workload
 from aidsp.models import Project, Task, Img
 from django.db.models import Count, Max, Sum, Expression
-import netifaces
 from django.db.models import Q
 from django.http import JsonResponse
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -178,7 +177,8 @@ def workload_list(request):
     dayWorkloadList = dayWorkload.values('assignee').annotate(workload=Sum('workcount'), pointsload=Sum('pointscount'))
     dataAll = {
         'picOrd': sorted(list(dayWorkloadList), key=lambda x: (x['workload'] if x['workload'] else 0), reverse=False),
-        'poiOrd': sorted(list(dayWorkloadList), key=lambda x: (x['pointsload'] if x['pointsload'] else 0), reverse=False),
+        'poiOrd': sorted(list(dayWorkloadList), key=lambda x: (x['pointsload'] if x['pointsload'] else 0),
+                         reverse=False),
     }
     return JsonResponse(dataAll, safe=False)
 
@@ -219,8 +219,10 @@ def hour_persons_info(request):
         .annotate(workload=Sum('workcount'), pointsload=Sum('pointscount'))
     # dataInfo = sorted(list(hourPersonsWorkload), key=lambda x: x['workload'], reverse=False)
     dataAll = {
-        'picOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['workload'] if x['workload'] else 0), reverse=False),
-        'poiOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['pointsload'] if x['pointsload'] else 0), reverse=False),
+        'picOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['workload'] if x['workload'] else 0),
+                         reverse=False),
+        'poiOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['pointsload'] if x['pointsload'] else 0),
+                         reverse=False),
     }
     return JsonResponse(dataAll, safe=False)
 
@@ -233,7 +235,7 @@ def get_daily_info(request):
                                                                             int(request.POST['MM']),
                                                                             int(request.POST['DD'])),
                                            project_detail_name__isnull=False).\
-                        values('assignee', 'project_detail_name', 'project_id').annotate(
+        values('assignee', 'project_detail_name', 'project_id').annotate(
         workload=Sum('workcount'), pointsload=Sum('pointscount'))
 
     daily_info_ori = {}
@@ -248,7 +250,7 @@ def get_daily_info(request):
         else:
             daily_info_ori[ele_workload['assignee']].append({'project': ele_workload['project_detail_name'],
                                                             'workload': ele_workload['pointsload'] if
-                                                        ele_workload['pointsload'] else ele_workload['workload'],
+                                                            ele_workload['pointsload'] else ele_workload['workload'],
                                                              'project_id': ele_workload['project_id'],
                                                              'basic_quantity': Project.objects.get(
                                                                  id=ele_workload['project_id']).basic_quantity})
