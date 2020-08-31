@@ -129,7 +129,6 @@ class Demo extends React.Component {
     labId: "",
     subloading: false
   };
-
   //提交
   handleSubmit = (e) => {
     e.preventDefault();
@@ -148,7 +147,7 @@ class Demo extends React.Component {
             background: this.state.bacDoc,
             total_demand: values.total_demand,
             total_describe: values.total_describe,
-            deadline: values.deadline._d,
+            deadline: values.deadline.format("YYYY-MM-DD HH:mm:ss"),
             labels: values.labels ? values.labels.toString() : null,
             users_found: values.users_found
               ? values.users_found.toString()
@@ -200,7 +199,7 @@ class Demo extends React.Component {
             background: this.state.bacDoc,
             total_demand: values.total_demand,
             total_describe: values.total_describe,
-            deadline: values.deadline._d,
+            deadline: values.deadline.format("YYYY-MM-DD HH:mm:ss"),
             labels: values.labels ? values.labels.toString() : null,
             users_found: values.users_found
               ? values.users_found.toString()
@@ -259,7 +258,7 @@ class Demo extends React.Component {
   componentDidMount() {
     const elemMenu = this.refs.editorElemMenu;
     const elemBody = this.refs.editorElemBody;
-    const editor = new LEdit(elemMenu, elemBody);  //项目背景富文本
+    const editor = new LEdit(elemMenu, elemBody);
     // 使用 onchange 函数监听内容的变化，并实时更新到 state 中
     editor.customConfig.onchange = (html) => {
       this.edonchange();
@@ -295,7 +294,7 @@ class Demo extends React.Component {
     editor.txt.html(this.state.reqDoc.doc);
     const elemMenu_2 = this.refs.editorElemMenu_2;
     const elemBody_2 = this.refs.editorElemBody_2;
-    const editor_2 = new LEdit(elemMenu_2, elemBody_2);  //文档富文本
+    const editor_2 = new LEdit(elemMenu_2, elemBody_2);
     // 使用 onchange 函数监听内容的变化，并实时更新到 state 中
     editor_2.customConfig.onchange = (html) => {
       this.setState({
@@ -333,7 +332,6 @@ class Demo extends React.Component {
     });
     this.project_fetch();
   }
-
   // 获取编辑前信息
   project_fetch = (params = {}) => {
     const pid = window.location.pathname.split("/")[
@@ -350,10 +348,10 @@ class Demo extends React.Component {
       method: "get"
     }).then((data) => {
       if (data.create_time) {
-        data.create_time = moment(data.create_time, "YYYY-MM-DD");
+        data.create_time = moment(data.create_time, "YYYY-MM-DD HH:mm:ss");
       }
       if (data.deadline) {
-        data.deadline = moment(data.deadline, "YYYY-MM-DD");
+        data.deadline = moment(data.deadline, "YYYY-MM-DD HH:mm:ss");
       }
       this.setState({ data: data });
       this.props.form.setFieldsValue(this.state.data);
@@ -410,8 +408,6 @@ class Demo extends React.Component {
       this.setState({ Options_label: Options_label });
     });
   };
-
-  //更改文档类别
   handleSizeChange = (e) => {
     this.setState({ nowDoc: e.target.value });
     this.state.nowDoc = e.target.value;
@@ -439,6 +435,7 @@ class Demo extends React.Component {
       this.state.labDoc.doc = this.state.editor.txt.html();
     }
   };
+
   handleQASubmit = (e) => {
     e.preventDefault();
     if (
@@ -570,7 +567,7 @@ class Demo extends React.Component {
   handleCancel = () => {
     this.setState({ visible: false });
   };
-
+  // 创建标签
   handleCreate = () => {
     const { form } = this.formRef.props;
     form.validateFields((err, values) => {
@@ -583,7 +580,6 @@ class Demo extends React.Component {
           window.location.host +
           "/aidsp/api/label/",
         {
-
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded"

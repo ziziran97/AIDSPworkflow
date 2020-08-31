@@ -6,5 +6,5 @@ __pycache__/
 *.pyc
 *.swp
 *.csv
-/src/aidsp/static/imgFile/*
-*.map
+src/aidsp/static/imgFile/*
+src/aidsp/static/*/*.map
