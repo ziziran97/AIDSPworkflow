@@ -63,6 +63,7 @@ class ProjectDisplaySerializer(serializers.ModelSerializer):
     # requirement_documents = serializers.StringRelatedField()
     # collection_documents = serializers.StringRelatedField()
     # labeling_documents = serializers.StringRelatedField()
+
     class Meta:
         model = Project
         fields = ['project_id', 'project_name', 'status', 'create_time', 'end_time', 'background', 'total_demand',
@@ -110,4 +111,5 @@ class WorkloadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workload
-        fields = ['id', 'assignee', 'updated_date', 'workcount', 'pointscount', 'task', 'project_detail_name', 'project_id']
+        fields = ['id', 'assignee', 'updated_date', 'workcount', 'pointscount', 'task', 'project_detail_name',
+                  'project_id']

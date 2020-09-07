@@ -1,7 +1,7 @@
 from django.shortcuts import render
-from django.contrib.auth import authenticate,login,logout
-from django.shortcuts import render,redirect,reverse
-from django.http import HttpResponse, HttpResponseRedirect
+from django.contrib.auth import authenticate, login
+from django.shortcuts import render
+from django.http import HttpResponseRedirect
 
 
 def Login(request):
@@ -13,15 +13,15 @@ def Login(request):
         user = authenticate(username=username, password=password)
         if user is not None:
             if user.is_active:
-                #登录，向session中添加SESSION_KEY, 便于对用户进行跟踪:
+                # 登录，向session中添加SESSION_KEY, 便于对用户进行跟踪:
                 login(request, user)
-                # 如果调用login方法以后，
-                # request对象就会激活user属性，这个属性不管登录或者未登录都是存在
+                # 如果调用login方法以后，request对象就会激活user属性，这个属性不管登录或者未登录都是存在
                 return HttpResponseRedirect('/aidsp')
             else:
                 return render(request, 'login.html', {'status': '用户未激活'})
         else:
             return render(request, 'login.html', {'status': '用户名或密码错误，请重新输入'})
+
 
 def indexRedirect(request):
     return HttpResponseRedirect('/aidsp')

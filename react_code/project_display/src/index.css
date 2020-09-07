@@ -1,0 +1,6 @@
+.fuwenben{
+  border-style: outset;
+}
+.ant-collapse-content>.ant-collapse-content-box{
+	overflow-x: auto;
+}

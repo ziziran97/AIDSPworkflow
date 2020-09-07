@@ -2,20 +2,18 @@ from django.shortcuts import render, HttpResponse
 from workload.models import Workload
 from aidsp.models import Project, Task, Img
 from django.db.models import Count, Max, Sum, Expression
-import netifaces
 from django.db.models import Q
 from django.http import JsonResponse
 from apscheduler.schedulers.background import BackgroundScheduler
-from django_apscheduler.jobstores import DjangoJobStore, register_events, register_job
 import psycopg2
 import datetime
-from collections import defaultdict
-from django.db import connection
 from django.conf import settings
 
 
 def my_job():
-    # 这里写你要执行的任务
+    """
+    查询工作量
+    """
     conn = psycopg2.connect(database='cvat', user='root',
                             password='', host='172.17.0.1',
                             port='65432')
@@ -146,8 +144,10 @@ def my_job():
     last_data.save()
 
 
-# 开启定时工作
 def scheable():
+    """
+    开启定时工作
+    """
     try:
         # 实例化调度器
         scheduler = BackgroundScheduler()
@@ -163,7 +163,9 @@ def scheable():
 
 
 def workload_list(request):
-    # 项目任务查询
+    """
+    项目任务查询
+    """
     taskQuery = Project.objects.get(id=request.POST['pid']).project_task.all()
     tasklist = []
     for ele in taskQuery:
@@ -173,28 +175,18 @@ def workload_list(request):
                                                                                               int(request.POST['MM']),
                                                                                               int(request.POST['DD'])))
     dayWorkloadList = dayWorkload.values('assignee').annotate(workload=Sum('workcount'), pointsload=Sum('pointscount'))
-
-    # 个人分时工作量
-    # personWorkloadList = {}
-    # personList = Workload.objects.filter().values_list('assignee').distinct()
-    #
-    # for person in personList:
-    #     personWorkloadList[person[0]] = []
-    #     for i in range(0, 24):
-    #         hourWorkload = dayWorkload.filter(updated_date__hour=i, assignee=person[0]).values_list('assignee')\
-    #             .annotate(workload=Sum('workcount'))
-    #         if len(hourWorkload) == 0:
-    #             continue
-    #         personWorkloadList[person[0]].append({'hour': '%d时' % i, 'workload': hourWorkload[0][1]})
     dataAll = {
         'picOrd': sorted(list(dayWorkloadList), key=lambda x: (x['workload'] if x['workload'] else 0), reverse=False),
-        'poiOrd': sorted(list(dayWorkloadList), key=lambda x: (x['pointsload'] if x['pointsload'] else 0), reverse=False),
+        'poiOrd': sorted(list(dayWorkloadList), key=lambda x: (x['pointsload'] if x['pointsload'] else 0),
+                         reverse=False),
     }
     return JsonResponse(dataAll, safe=False)
 
 
 def hours_info(request):
-    # 项目任务查询
+    """
+    小时工作量查询
+    """
     taskQuery = Project.objects.get(id=request.POST['pid']).project_task.all()
     tasklist = []
     for ele in taskQuery:
@@ -213,7 +205,9 @@ def hours_info(request):
 
 
 def hour_persons_info(request):
-    # 项目任务查询
+    """
+    小时工作量排行
+    """
     taskQuery = Project.objects.get(id=request.POST['pid']).project_task.all()
     tasklist = []
     for ele in taskQuery:
@@ -225,18 +219,23 @@ def hour_persons_info(request):
         .annotate(workload=Sum('workcount'), pointsload=Sum('pointscount'))
     # dataInfo = sorted(list(hourPersonsWorkload), key=lambda x: x['workload'], reverse=False)
     dataAll = {
-        'picOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['workload'] if x['workload'] else 0), reverse=False),
-        'poiOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['pointsload'] if x['pointsload'] else 0), reverse=False),
+        'picOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['workload'] if x['workload'] else 0),
+                         reverse=False),
+        'poiOrd': sorted(list(hourPersonsWorkload), key=lambda x: (x['pointsload'] if x['pointsload'] else 0),
+                         reverse=False),
     }
     return JsonResponse(dataAll, safe=False)
 
 
 def get_daily_info(request):
+    """
+    团队日报信息
+    """
     workload_set = Workload.objects.filter(updated_date__date=datetime.date(int(request.POST['YY']),
                                                                             int(request.POST['MM']),
                                                                             int(request.POST['DD'])),
                                            project_detail_name__isnull=False).\
-                        values('assignee', 'project_detail_name', 'project_id').annotate(
+        values('assignee', 'project_detail_name', 'project_id').annotate(
         workload=Sum('workcount'), pointsload=Sum('pointscount'))
 
     daily_info_ori = {}
@@ -251,7 +250,7 @@ def get_daily_info(request):
         else:
             daily_info_ori[ele_workload['assignee']].append({'project': ele_workload['project_detail_name'],
                                                             'workload': ele_workload['pointsload'] if
-                                                        ele_workload['pointsload'] else ele_workload['workload'],
+                                                            ele_workload['pointsload'] else ele_workload['workload'],
                                                              'project_id': ele_workload['project_id'],
                                                              'basic_quantity': Project.objects.get(
                                                                  id=ele_workload['project_id']).basic_quantity})
@@ -263,6 +262,9 @@ def get_daily_info(request):
 
 
 def scd_switch(request):
+    """
+    开启定时任务
+    """
     if request.user.is_superuser:
         if settings.SCHEDULETENABLE:
             return HttpResponse('定时任务已开启')
@@ -274,6 +276,9 @@ def scd_switch(request):
 
 
 def task_workload(request, task_name=None):
+    """
+    查询单个任务工作量
+    """
     conn = psycopg2.connect(database='cvat', user='root',
                             password='', host='172.17.0.1',
                             port='65432')
@@ -368,6 +373,9 @@ def task_workload(request, task_name=None):
 
 
 def real_time_job(request):
+    """
+    立即更新工作量查询
+    """
     if request.user.is_superuser:
         my_job()
         return HttpResponse('更新完毕')
@@ -376,5 +384,8 @@ def real_time_job(request):
 
 
 def get_updated_time(request):
+    """
+    获取工作量最后更新时间
+    """
     last_data = Workload.objects.filter(~Q(lastid=None)).last()
     return JsonResponse({'updated_time': last_data.updated_date.strftime('%Y-%m-%d %H:%M:%S')}, safe=False)

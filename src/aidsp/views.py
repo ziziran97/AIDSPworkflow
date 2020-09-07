@@ -1,15 +1,12 @@
-from django.db.models import QuerySet
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import render, HttpResponse, HttpResponseRedirect
 from .models import Project, Task, User, Img
-# Create your views here.
 import os
 from django.forms.models import model_to_dict
 from django.db.models import Q
 import json
 import urllib
 from django.conf import settings
-from django.db.models import Count
 from django.utils import timezone
 from .cli.cvat import create_tasks
 import zipfile
@@ -66,6 +63,9 @@ def pic_screen(request,task_name=None):
 
 
 def dataset_fileupload(request):
+    """
+    上传zip文件
+    """
     filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
     filename = str(request.FILES['file'])
     while filename in os.listdir(filedir):
@@ -73,7 +73,7 @@ def dataset_fileupload(request):
     with open(os.path.join(filedir, filename), 'wb') as f:
         for chunk in request.FILES['file'].chunks():
             f.write(chunk)
-
+    # 上传后自动解压
     r = zipfile.is_zipfile(os.path.join(filedir, filename))
     if r:
         fz = zipfile.ZipFile(os.path.join(filedir, filename), 'r')
@@ -98,8 +98,10 @@ def aidspRedirect(request):
     return HttpResponseRedirect('personal')
 
 
-# 任务分配
 def taskPost(request):
+    """
+    任务分配
+    """
     if request.method == 'POST':
         line = request.FILES['csvFile'].readline()
         errorflog = False
@@ -127,6 +129,7 @@ def taskPost(request):
                     ntask = Task.objects.get(task_name=linedict[0])
                     # 添加人员
                     if len(linedict) > 1:
+                        # 标注员添加
                         for elename in linedict[1].split(' '):
                             if elename:
                                 try:
@@ -140,6 +143,7 @@ def taskPost(request):
                                     errorflog = True
 
                     if len(linedict) > 2:
+                        # 审核员添加
                         for elename in linedict[2].split(' '):
                             if elename:
                                 try:
@@ -168,7 +172,7 @@ def taskPost(request):
 
 
 # 模型转换字典
-def get_dict(ele_model,rdata):
+def get_dict(ele_model, rdata):
     if ele_model.belong_task not in rdata:
         dict_ele = model_to_dict(ele_model)
 
@@ -201,22 +205,20 @@ def get_dict(ele_model,rdata):
     return rdata
 
 
-# 获取任务信息
 def taskGet(request, id=None, type=None):
+    """
+    获取任务信息
+    :param id: 项目id
+    :param type:任务类型（采集或标注）
+    :return:
+    """
     if request.method == 'GET':
         task_list = Task.objects.filter(project_id=id, task_type=type).order_by('id')
         rdata = {}
         # 添加任务信息到字典
-        x = 0
         for ele_model in task_list:
             # 按大任务分类
             dict_ele = ele_model.to_dict()
-            # dict_ele = model_to_dict(ele_model)
-            # dict_ele.update({
-            #     'create_time': ele_model.create_time,
-            #     'assignee': [x.id for x in dict_ele['assignee']],
-            #     'reviewer': [x.id for x in dict_ele['reviewer']],
-            # })
             if ele_model.belong_task not in rdata:
                 rdata[ele_model.belong_task] = [dict_ele]
             else:
@@ -227,15 +229,19 @@ def taskGet(request, id=None, type=None):
         return HttpResponse('不允许的请求方式！')
 
 
-# 改变任务状态
 def tasksChange(request, id=None):
+    """
+    改变单个任务状态
+    """
     if request.method == 'POST':
         mtask = Task.objects.get(id=request.POST['id'])
         if 'assignee' in request.POST:
-            mtask.assignee.clear()
+            # mtask.assignee.clear()
             if request.POST['assignee']:
                 adict = request.POST['assignee'].split(',')
                 for ele in adict:
+                    if mtask.assignee.all():
+                        return HttpResponse("任务已被分配", status=403)
                     mtask.assignee.clear()
                     mtask.assignee.add(ele)
                     if mtask.task_link.startswith('https'):
@@ -258,12 +264,15 @@ def tasksChange(request, id=None):
                             driver.quit()
                             return HttpResponse("未找到任务", status=500)
                         driver.quit()
+            else:
+                mtask.assignee.clear()
 
         if 'reviewer' in request.POST:
-            mtask.reviewer.clear()
             if request.POST['reviewer']:
                 rdict = request.POST['reviewer'].split(',')
                 for ele in rdict:
+                    if mtask.reviewer.all():
+                        return HttpResponse("任务已被分配", status=403)
                     mtask.reviewer.clear()
                     mtask.reviewer.add(ele)
                     if mtask.task_link.startswith('https'):
@@ -286,6 +295,9 @@ def tasksChange(request, id=None):
                             driver.quit()
                             return HttpResponse("未找到任务", status=500)
                         driver.quit()
+            else:
+                mtask.reviewer.clear()
+
         if 'status' in request.POST:
             mtask.status = request.POST['status']
             mtask.save()
@@ -293,7 +305,6 @@ def tasksChange(request, id=None):
             mtask.quantity_available = request.POST['quantity_available']
             mtask.save()
         if 'error_info' in request.POST:
-            print(request.POST)
             mtask.error_info = request.POST['error_info']
             mtask.save()
         return HttpResponse('成功！')
@@ -302,8 +313,11 @@ def tasksChange(request, id=None):
         return HttpResponse('不允许的请求方式！')
 
 
-# 获取个人任务
 def personalTasksGet(request):
+    """
+    获取个人任务
+    """
+    # 审核任务
     rdata = {
             0: collections.OrderedDict(),
             1: collections.OrderedDict(),
@@ -322,6 +336,7 @@ def personalTasksGet(request):
         for bele in rdata[sele]:
             for tele in rdata[sele][bele]:
                 tele.update({'is_admin': True})
+    # 标注任务
     adata = {
         0: collections.OrderedDict(),
         1: collections.OrderedDict(),
@@ -348,8 +363,10 @@ def personalTasksGet(request):
     return JsonResponse(pdata)
 
 
-# 项目展示页面提交
 def extraProjectPost(request):
+    """
+    项目展示页面部分字段提交
+    """
     if request.method == 'POST':
         tproject = Project.objects.get(id=request.POST['id'])
         for key in request.POST:
@@ -370,8 +387,11 @@ def extraProjectPost(request):
         return HttpResponse('不允许的请求方式！')
 
 
-# 获取图片
 def getImg(request, task_name=None):
+    """
+    获取图片
+    :param task_name: 任务名
+    """
     if request.method == 'POST':
         # 查找未完成图片放空
         mtask = Task.objects.get(task_name=task_name)
@@ -387,8 +407,10 @@ def getImg(request, task_name=None):
         return HttpResponse('不允许的请求方式！')
 
 
-# 提交图片
 def postImg(request):
+    """
+    提交图片
+    """
     if request.method == 'POST':
         rightImg = Img.objects.none()
         errorImg = Img.objects.none()
@@ -409,16 +431,20 @@ def postImg(request):
         return HttpResponse('不允许的请求方式！')
 
 
-# 已完成图片
 def finishImg(request, task_name=None):
+    """
+    显示已完成图片
+    """
     mtask = Task.objects.get(task_name=task_name)
     left = Img.objects.filter(~Q(status=None), assignor=request.user, tasks=mtask)
     value = [{'id': i[0], 'url': i[1], 'status': i[2]} for i in left.values_list('id', 'url', 'status')]
     return JsonResponse(value, safe=False)
 
 
-# 显示文件列表
 def showFileList(request):
+    """
+    显示文件列表
+    """
     dir = settings.IMGFILEDIR
     task_db = Task.objects.filter()
     task_list = []
@@ -428,10 +454,11 @@ def showFileList(request):
         else:
             tn = ele.task_name
         task_list.append(tn)
-        # if ele.belong_task not in task_list:
-        #     task_list.append(ele.belong_task)
 
     def appendFile(dir):
+        """
+        递归查询文件夹下子文件
+        """
         dirlist = []
         filedir = os.listdir(dir)
         filedir.sort(key=lambda x: os.path.getmtime(os.path.join(dir, x)), reverse=True)
@@ -441,7 +468,9 @@ def showFileList(request):
                     'title': file if file not in task_list else '(已添加)' + file,
                     'key': file,
                     'children': appendFile(os.path.join(dir, file)) if file not in task_list else None,
-                    'selectable': True if dir == os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile') and (file not in task_list) else False
+                    'selectable': True if dir == os.path.join(os.path.dirname(settings.BASE_DIR),
+                                                              'aidsp/static/imgFile') and
+                                          (file not in task_list) else False
                 })
             else:
                 if file != '.gitignore' and not file.endswith('.zip'):
@@ -458,7 +487,9 @@ def showFileList(request):
 
 # 上传任务
 def tasksUpload(request):
-
+    """
+    上传任务
+    """
     if request.method == 'POST':
         # 筛选任务
         if request.POST['type'] == 'screen':
@@ -469,7 +500,8 @@ def tasksUpload(request):
 
             mpid = Project.objects.get(id=request.POST['project'])
             # 创建任务
-            ntask = Task.objects.create(project=mpid, task_name=request.POST['task'], task_link='/aidsp/screen/'+request.POST['task'],
+            ntask = Task.objects.create(project=mpid, task_name=request.POST['task'],
+                                        task_link='/aidsp/screen/'+request.POST['task'],
                                         gross=len(os.listdir(taskdir)), status=0, belong_task=request.POST['task'],
                                         task_type=request.POST['task_type'])
             # 添加图片
@@ -479,7 +511,7 @@ def tasksUpload(request):
                 img_list.append(img)
             Img.objects.bulk_create(img_list)
             return HttpResponse('添加完成')
-        #标注任务
+        # 标注任务
         elif request.POST['type'] == 'tagging':
             auth = 'cvat:cvat_Cpv17d0Da2'
             # create_tasks_files()
@@ -507,8 +539,10 @@ def tasksUpload(request):
     return HttpResponse('不允许的请求方式！')
 
 
-# 复制新任务
 def taskCopy(request):
+    """
+    复制新任务
+    """
     if request.method == 'POST':
         mpid = Project.objects.get(id=request.POST['project'])
         task_name = request.POST['task_name']
@@ -527,8 +561,10 @@ def taskCopy(request):
     return HttpResponse('不允许的请求方式！')
 
 
-# 获取图片任务信息
 def getImgTask(request):
+    """
+    获取图片任务信息
+   """
     if request.method == 'POST':
         if not request.POST['belong_task'].endswith('_pick'):
             belong_task = request.POST['belong_task'] + '_pick'
@@ -573,8 +609,10 @@ def getImgTask(request):
     return HttpResponse('不允许的请求方式！')
 
 
-# 导出正确结果
 def picRight(request, task_name=None):
+    """
+    导出图片筛选结果
+    """
     if not task_name.endswith('_pick'):
         task_name = task_name + '_pick'
     ownImgs = Img.objects.filter(tasks=task_name)
@@ -590,8 +628,11 @@ def picRight(request, task_name=None):
     response['Content-Disposition'] = 'attachment; filename={0}.txt'.format(task_name)
     return response
 
-# 清空本周工作量
+
 def workloadRm(request):
+    """
+    清空本周工作量
+    """
     if request.user.is_superuser:
         all_peoject = Project.objects.filter().all()
         for ele_project in all_peoject:
@@ -604,37 +645,42 @@ def workloadRm(request):
 
 
 def hTagList(it, level, n):
+    """
+    获取文档标题列表字典列表
+    :param it: 文档标题迭代器
+    :param level: 指定标题等级
+    :param n: 当前标题
+    :return: 文档标题列表字典列表
+    """
     hlist = []
     while True:
         if n is None:
             return {'list': hlist, 'n': None}
 
-        # print('当前等级（%d）,当前文档（%s）,标签等级（%s）' % (level, n.xpath('string(.)'),n.tag))
+        # 当标题与指定标题等级一致时，平级添加字典
         if int(n.tag[1:2]) == level:
-            hlist.append({'title':n.xpath('string(.)'),'children': []})
+            hlist.append({'title': n.xpath('string(.)'), 'children': []})
             try:
                 n = it.__next__()
-                continue
-            except Exception as e:
+            except StopIteration:
                 return {'list': hlist, 'n': None}
 
-        if int(n.tag[1:2]) > level:
+        # 当标题等级大于指定标题等级时，该标题往下所有大于指定标题等级的节点归为上一个标题子节点
+        elif int(n.tag[1:2]) > level:
             ren = hTagList(it=it, level=int(n.tag[1:2]), n=n)
             hlist[-1]['children'] = ren['list']
             n = ren['n']
-            continue
 
-        if int(n.tag[1:2]) < level:
-            return {'list': hlist, 'n': n }
-            break
-        break
+        # 当标题等级小于指定标题时，返回获得的所有标题
+        elif int(n.tag[1:2]) < level:
+            return {'list': hlist, 'n': n}
 
-    return {'list': hlist, 'n': n}
 
-# 显示markdown
 def mdView(request, filename=None):
+    """
+    显示文档
+    """
     mddir = os.path.join(os.path.dirname(settings.BASE_DIR), 'doc')
-
     # 直接读html
     mdfile = os.path.join(mddir, filename + '.html')
     if not os.path.exists(mdfile):
@@ -643,20 +689,19 @@ def mdView(request, filename=None):
         text = f.read()
     html = text
     text = text.replace('images/', '/aidsp/static/').replace('images\\', '/aidsp/static/')
-
     html = etree.HTML(html)
     h1_list = html.xpath('//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6]')
     for ele in h1_list:
         old_ele = etree.tostring(ele).decode('utf-8')
         new_ele = old_ele.replace('<span>', '<span id="%s">' % ele.xpath('string(.)'))
-
         text = text.replace(old_ele, new_ele)
-
     return HttpResponse(text)
 
 
-#显示文档列表
 def mdList(requests):
+    """
+    显示文档列表
+    """
     mddir = os.path.join(os.path.dirname(settings.BASE_DIR), 'doc')
     mdlist = []
     for file in os.listdir(mddir):
@@ -665,6 +710,7 @@ def mdList(requests):
             with open(mdfile, 'r', encoding='utf-8') as f:
                 text = f.read()
             html = etree.HTML(text)
+            # 获取所有标题
             h1_list = html.xpath('//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6]')
             it = iter(h1_list)
             n = it.__next__()
@@ -674,32 +720,39 @@ def mdList(requests):
 
 
 def change_assignee(driver, task_name, assignee):
+    """
+    更改标注员
+    """
     driver.get(inside_url + "/admin/engine/task/?q=%s" % task_name)
     tn = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.LINK_TEXT, task_name)))
     tn.click()
     ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_assignee')))
     ass = Select(ass)
     ass.select_by_visible_text(assignee)
-    # ass.send_keys(assignee)
     save = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, '_save')))
     save.click()
     wait = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator')))
 
 
 def change_owner(driver, task_name, owner):
+    """
+    更改审核员
+    """
     driver.get(inside_url + "/admin/engine/task/?q=%s" % task_name)
     tn = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.LINK_TEXT, task_name)))
     tn.click()
     ass = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'id_owner')))
     ass = Select(ass)
     ass.select_by_visible_text(owner)
-    # ass.send_keys(owner)
     save = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.NAME, '_save')))
     save.click()
     wait = WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CLASS_NAME, 'paginator')))
 
 
 def signin():
+    """
+    获取cvat登录后cookie
+    """
     baseurl = inside_url
     ss = requests.session()
     admin_url = baseurl + '/admin/login/?next=/admin/'
@@ -715,19 +768,22 @@ def signin():
         'password': 'cvat_Cpv17d0Da2',
         'next': '/admin/',
     }
-    adres = ss.post(admin_url, verify=False, data=data)
+    ss.post(admin_url, verify=False, data=data)
     print('登录完毕')
     return ss.cookies
 
-# 查询工作量百分比
+
 def percentage_workload(request, id=None):
+    """
+    查询工作量百分比
+    """
     task_query = Project.objects.get(id=id).project_task.all()
     all_percentage1 = task_query.filter(task_type=1).aggregate(current_workload=Sum('current_workload'),
-                                          quantity_available=Sum('quantity_available'),
-                                          gross=Sum('gross'))
+                                                               quantity_available=Sum('quantity_available'),
+                                                               gross=Sum('gross'))
     all_percentage2 = task_query.filter(task_type=2).aggregate(current_workload=Sum('current_workload'),
-                                          quantity_available=Sum('quantity_available'),
-                                          gross=Sum('gross'))
+                                                               quantity_available=Sum('quantity_available'),
+                                                               gross=Sum('gross'))
     each_percentage_query = task_query.values('belong_task').annotate(current_workload=Sum('current_workload'),
                                                                       quantity_available=Sum('quantity_available'),
                                                                       gross=Sum('gross'))
@@ -742,9 +798,11 @@ def percentage_workload(request, id=None):
     return JsonResponse(dataAll, safe=False)
 
 
-#  创建任务长连接
 @accept_websocket
 def socket_tasksupload(request):
+    """
+    上传任务socket:
+    """
     if request.is_websocket():
         for message in request.websocket:
             if not message:
@@ -756,7 +814,6 @@ def socket_tasksupload(request):
                     taskdir = os.path.join(settings.IMGFILEDIR, post_data['task'])
                     for file in os.listdir(taskdir):
                         if os.path.isdir(os.path.join(taskdir, file)):
-                            # return HttpResponse('筛选任务的文件夹中不能包含文件夹', status=500)
                             request.websocket.send('筛选任务的文件夹中不能包含文件夹'.encode('utf-8'))
 
                             return
@@ -774,13 +831,11 @@ def socket_tasksupload(request):
                         img = Img(tasks=ntask, url='/static/imgFile/'+post_data['task']+'/'+file)
                         img_list.append(img)
                     Img.objects.bulk_create(img_list)
-                    # return HttpResponse('添加完成')
                     request.websocket.send('添加完成'.encode('utf-8'))
                     return
-                #标注任务
+                # 标注任务
                 elif post_data['type'] == 'tagging':
                     auth = 'cvat:cvat_Cpv17d0Da2'
-                    # create_tasks_files()
                     task_name = post_data['task']
                     imgdir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
                     cli_path = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/cli/cli.py')
@@ -812,16 +867,16 @@ def socket_tasksupload(request):
                                                 task_link=task_link,
                                                 gross=ele['size'], status=0, belong_task=post_data['task'],
                                                 task_type=post_data['task_type'])
-                        except StopIteration as e:
+                        except StopIteration:
                             break
                         except Exception as e:
                             print(e)
                             i = i - 1
                             break
                     if i == -1:
-                        request.websocket.send(('文件夹内格式无措').encode('utf-8'))
+                        request.websocket.send('文件夹内格式错误'.encode('utf-8'))
                     elif i == 0:
-                        request.websocket.send(('没有可以创建的任务').encode('utf-8'))
+                        request.websocket.send('没有可以创建的任务'.encode('utf-8'))
                     else:
                         request.websocket.send(('添加完成 %d/%d' % (i, count)).encode('utf-8'))
             except Exception as e:
@@ -833,6 +888,9 @@ def socket_tasksupload(request):
 
 
 def task_standard_post(request):
+    """
+    修改任务标准
+    """
     tproject = Project.objects.get(id=request.POST['pid'])
     if request.POST['standard']:
         for ele in request.POST['standard'].split(','):
@@ -843,5 +901,4 @@ def task_standard_post(request):
         tproject.task_standard = None
     tproject.save()
     return HttpResponse('成功')
-
 
