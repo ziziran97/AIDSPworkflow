@@ -1,10 +1,10 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from .models import Project, User, Label, Document, QA, Reply, Dataset, Task
+from .models import Project, User, Label, Document, QA, Reply, Dataset, Task, ImgBase
 from workload.models import Workload
 from .serializers import ProjectSerializer, ProjectDetailSerializer, UserSerializer, LabelSerializer, QASerializer, \
     ProjectDisplaySerializer, ReplySerializer, DatasetSerializer, DatasetDetailSerializer, DatasetListSerializer, \
-    TaskSerializer, WorkloadSerializer
+    TaskSerializer, WorkloadSerializer, ImgBaseSerializer
 from django.forms.models import model_to_dict
 from django.utils import timezone
 from django.db.models import Max
@@ -393,6 +393,24 @@ class DatasetViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+class ImgBaseViewSet(viewsets.ModelViewSet):
+    serializer_class = ImgBaseSerializer
+    queryset = ImgBase.objects.filter()
+
+    def create(self, request, *args, **kwargs):
+        data = request.POST
+        _mutable = data._mutable
+        # 设置_mutable为True
+        data._mutable = True
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
 
 
 class TaskViewSet(viewsets.ModelViewSet):

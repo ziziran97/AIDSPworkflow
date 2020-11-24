@@ -33,7 +33,12 @@ class Demo extends React.Component {
     loading: false,
     Options: [],
     data: [],
-    fileList: []
+    fileList: [],
+    datapath: [],
+    fileZip: [],
+    uploading: false,
+    img: "",
+    dataset: ""
   };
   //提交
   handleSubmit = (e) => {
@@ -56,7 +61,7 @@ class Demo extends React.Component {
               },
               body:
                 "name=" +
-                values.name.replace(/&/g, "%26") +
+                values.name +
                 "&project=" +
                 values.project_id +
                 (values.describe
@@ -110,7 +115,7 @@ class Demo extends React.Component {
               },
               body:
                 "name=" +
-                values.name.replace(/&/g, "%26") +
+                values.name +
                 "&project=" +
                 values.project_id +
                 (values.describe
@@ -142,8 +147,77 @@ class Demo extends React.Component {
               });
             }
           });
+          this.showDataset(this.state.dataset);
         }
       }
+    });
+  };
+
+  showDataset = (name)=>{
+    console.log(name)
+    reqwest({
+      url:
+        window.location.protocol +
+          "//" +
+          window.location.host +
+          "/aidsp/dataset/imglist/?name=${name}",
+        method: "get"
+    }).then((data) => {
+      data = JSON.parse(data);
+      data.map((station) => (
+          fetch(
+              window.location.protocol +
+              "//" +
+              window.location.host +
+              "/aidsp/api/imgbase/",
+              {
+                method: "POST",
+                headers:{
+                  "Content-Type": "application/x-www-form-urlencode"
+                },
+                body: JSON.stringify({
+                  "img_name": station.name,
+                  "dataset": name,
+                  "img_path": "aidsp/static/dataset/" + name,
+                  "img_info": station.info,
+                  "assignee": station.assignee,
+                  "reviewer": station.reviewer,
+                })
+              }
+          )
+      ))
+
+    })
+
+  };
+
+  showModal = () => {
+    this.setState({
+      visible: true,
+    });
+    this.state.dataset = ${value}
+    reqwest({
+      url:
+        window.location.protocol +
+          "//" +
+          window.location.host +
+          "/aidsp/dataset/imgthum/?value=${value}",
+        method: "get"
+    }).then((data) => {
+      this.state.img = data
+    })
+
+  };
+
+  handleOk = () => {
+    this.setState({
+      visible: false,
+    });
+  };
+
+  handleCancel = () => {
+    this.setState({
+      visible: false,
     });
   };
 
@@ -169,6 +243,38 @@ class Demo extends React.Component {
         })
       );
     }
+  };
+
+  handleUpload = () => {
+    const { fileZip } = this.state;
+    const formData = new FormData();
+    formData.append('file', fileZip);
+
+    this.setState({
+      uploading: true,
+    });
+    reqwest({
+      url: window.location.protocol +
+              "//" +
+              window.location.host +
+              "aidsp/dataset/fileupload/?index=1",
+      method: 'post',
+      processData: false,
+      data: formData,
+      success: () => {
+        this.setState({
+          fileZip,
+          uploading: false,
+        });
+        Modal.success('upload successfully.');
+      },
+      error: () => {
+        this.setState({
+          uploading: false,
+        });
+        Modal.error('upload failed.');
+      },
+    })
   };
 
   componentDidMount() {
@@ -201,6 +307,24 @@ class Demo extends React.Component {
     reqwest({
       url:
         window.location.protocol +
+          "//" +
+          window.location.host +
+          "/aidsp/dataset/path/",
+        method: "get"
+    }).then((data) => {
+      this.setState( {data_path: data});
+      data = JSON.parse(data);
+      let Options = data.map((station) => (
+          <Option value={station.name}>
+            {station.name}
+          </Option>
+      ));
+      this.setState({datapath: Options });
+      console.log(Options)
+    });
+    reqwest({
+      url:
+        window.location.protocol +
         "//" +
         window.location.host +
         "/aidsp/api/dataset/" +
@@ -230,6 +354,7 @@ class Demo extends React.Component {
       }
     });
   };
+
   uploadOnchange = (info) => {
     let fileList = [...info.fileList];
 
@@ -276,13 +401,55 @@ class Demo extends React.Component {
     );
     const { imageUrl } = this.state;
 
+    const { uploading, fileZip } = this.state;
+    const props = {
+      onRemove: (file) => {
+        this.setState((state) => {
+          const index = state.fileZip.indexOf(file);
+          const newFileList = state.fileZip.slice();
+          newFileList.splice(index, 1);
+          return {
+            fileZip: newFileList,
+          };
+        });
+      },
+      beforeUpload: (file) => {
+        this.setState(state => ({
+          fileZip: [...state.fileZip, file],
+        }));
+        return false;
+      },
+      fileZip,
+    };
+
     return (
       <Form {...formItemLayout} onSubmit={this.handleSubmit}>
         <Form.Item label="数据集名称">
           {getFieldDecorator("name", {
             rules: [{ required: true, message: "请输入数据集名称!" }]
-          })(<Input placeholder="请输入项目名称"></Input>)}
+          })(
+            <Select
+              placeholder="请选择所属数据集"
+              showSearch
+              onChange={ this.showModal }
+              filterOption={(input, option) =>
+                option.props.children
+                  .toLowerCase()
+                  .indexOf(input.toLowerCase()) >= 0
+              }
+            >
+              {this.state.datapath}
+            </Select>
+          )}
         </Form.Item>
+        <Modal
+          title="图片预览"
+          visible={this.state.visible}
+          onOk={this.handleOk}
+          onCancel={this.handleCancel}
+        >
+          <p>a</p>
+        </Modal>
         <Form.Item label="项目">
           {getFieldDecorator("project_id", {
             rules: [{ required: true, message: "请选择所属项目!" }]
@@ -352,6 +519,23 @@ class Demo extends React.Component {
             提交
           </Button>
         </Form.Item>
+
+        <div>
+        <Upload {...props}>
+          <Button>
+            <Icon type="upload" /> 上传zip
+          </Button>
+        </Upload>
+        <Button
+          type="primary"
+          onClick={this.handleUpload}
+          disabled={fileZip.length === 0}
+          loading={uploading}
+          style={{ marginTop: 16 }}
+        >
+          {uploading ? 'Uploading' : 'Start Upload' }
+        </Button>
+      </div>
       </Form>
     );
   }

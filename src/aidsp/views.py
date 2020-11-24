@@ -1,6 +1,6 @@
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import render, HttpResponse, HttpResponseRedirect
-from .models import Project, Task, User, Img
+from .models import Project, Task, User, Img, ImgBase
 import os
 from django.forms.models import model_to_dict
 from django.db.models import Q
@@ -66,7 +66,12 @@ def dataset_fileupload(request):
     """
     上传zip文件
     """
-    filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
+    path = request.GET.get("index",'')
+    print(path,"==")
+    if path:
+        filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/dataset')
+    else:
+        filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
     filename = str(request.FILES['file'])
     while filename in os.listdir(filedir):
         filename = 'n_' + filename
@@ -85,6 +90,81 @@ def dataset_fileupload(request):
     # 文件路径
     return HttpResponse(filename)
 
+def dataset_path(request):
+    path = os.path.join(settings.STATIC_ROOT, 'dataset')
+    data = []
+    count = 0
+    for i in os.listdir(path):
+        file = os.path.join(path, i)
+        if os.path.isdir(file):
+            data.append({'path': file, 'name': i, 'id': count})
+            count += 1
+
+    return HttpResponse(json.dumps(data))
+
+def dataset_img(request):
+    values = request.GET.get('name')
+    # path = os.path.join(settings.STATIC_ROOT, 'dataset/{}/img'.format(values))
+    # img_list = os.listdir(path)
+    # data = []
+    # for i in img_list:
+    #     data.append({"name":i,"info": "1"})
+    path = os.path.join(settings.STATIC_ROOT, 'dataset/{}/info.txt'.format(values))
+    data = []
+    with open(path, 'r') as f:
+        info = f.read().split('\n')
+        for i in info:
+            item = eval(i)
+            data.append({"name": item['name'],
+                         "assignee": item["assignee"],
+                         "reviewer": item["reviewer"],
+                         "info": item["info"]
+                         })
+
+    return HttpResponse(json.dumps(data))
+
+import random,cv2,base64
+import numpy as np
+def img_thum(request):
+    """
+
+    图片缩略图
+    """
+    value = request.GET.get("value")
+    path = os.path.join(settings.STATIC_ROOT, 'dataset/{}/img'.format(value))
+    if not os.path.exists(path):
+        return HttpResponse("找不到该数据集！！！")
+    img_list = os.listdir(path)
+    img = []
+    for i in range(24):
+        idx = random.randint(0,len(img_list)-1)
+        img_path = os.path.join(path, img_list[idx])
+        img.append(img_path)
+
+    img_out = cv2.imread(img[0])
+    img_out = cv2.resize(img_out, (120, 150))
+    for i in range(0, 5):
+        if i != 0:
+            img_a = cv2.imread(img[i * 5])
+            img_a = cv2.resize(img_a, (120, 150))
+        for j in range(1, 5):
+
+            img_tmp = cv2.imread(img[(i - 1) * 5 + j])
+            img_tmp = cv2.resize(img_tmp, (120, 150))
+
+            # 横向
+            if i == 0:
+                img_out = np.concatenate((img_out, img_tmp), axis=1)
+            else:
+                img_a = np.concatenate((img_a, img_tmp), axis=1)
+
+        # 纵向
+        if i != 0:
+            img_out = np.concatenate((img_out, img_a))
+    image = cv2.imencode('.jpg', img_out)[1]
+    image_code = str(base64.b64encode(image))[2:-1]
+    base64_img = 'data:image/png;base64,' + image_code
+    return HttpResponse(base64_img)
 
 def dataset_filedownload(request, filename=None):
     filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/file')
@@ -93,6 +173,12 @@ def dataset_filedownload(request, filename=None):
     response['Content-Type'] = 'application/octet-stream'
     return response
 
+def ddaabb(request):
+    data = ImgBase.objects.all().values()
+    # for i in data:
+    #     print(i)
+    # print(data)
+    return HttpResponse(data)
 
 def aidspRedirect(request):
     return HttpResponseRedirect('personal')

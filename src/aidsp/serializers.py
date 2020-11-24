@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Project, User, Label, QA, Reply, Dataset, Task
+from .models import Project, User, Label, QA, Reply, Dataset, Task, ImgBase
 from workload.models import Workload
 # Create your views here.
 
@@ -80,6 +80,12 @@ class DatasetSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'project', 'describe', 'create_time', 'update_time', 'quantity_detials',
                   'path', 'img',  'project_id']
 
+class ImgBaseSerializer(serializers.ModelSerializer):
+    project = None
+
+    class Meta:
+        model = ImgBase
+        fields = ['id', 'img_name', 'dataset', 'img_path', 'img_info', 'assignee', 'reviewer', 'create_time', 'update_time']
 
 class DatasetDetailSerializer(DatasetSerializer):
     project = None
