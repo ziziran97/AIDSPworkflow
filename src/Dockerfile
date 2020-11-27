@@ -45,7 +45,8 @@ RUN pip3 install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 ADD . /code/
 # 设置环境变量
 ENV PROJECT_PROFILE product
-RUN apt-get -y install tzdata \
+RUN apt-get update \
+    && apt-get -y install tzdata \
     && ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone
 ENV TZ Asia/Shanghai
