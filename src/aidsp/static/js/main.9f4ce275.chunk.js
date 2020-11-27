@@ -237,6 +237,7 @@
                             offset: 6
                         }
                     }, d.a.createElement(v.a, {type: "primary", htmlType: "submit"}, "\u63d0\u4ea4")),
+                       d.a.createElement(w.a.Item, {label: "文件上传"},
                         d.a.createElement("div", null, d.a.createElement(b.a, ff, d.a.createElement(v.a, null, d.a.createElement(f.a, {type: "upload"}), " 上传zip")), d.a.createElement(v.a, {
                     type: "primary",
                     onClick: this.handleUpload,
@@ -244,7 +245,7 @@
                     loading: ss,
                     style: {marginTop: 16}
                 }, ss ? "Uploading" : "Start Upload")),
-                )
+                ))
                 }
             }]), t
         }(d.a.Component), C = w.a.create({name: "validate_other"})(_);

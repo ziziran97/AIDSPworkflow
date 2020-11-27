@@ -95,6 +95,8 @@ def dataset_path(request):
     data = []
     count = 0
     for i in os.listdir(path):
+        if i == '__MACOSX':
+            continue
         file = os.path.join(path, i)
         if os.path.isdir(file):
             data.append({'path': file, 'name': i, 'id': count})
@@ -131,38 +133,56 @@ def img_thum(request):
     图片缩略图
     """
     value = request.GET.get("value")
-    path = os.path.join(settings.STATIC_ROOT, 'dataset/{}/img'.format(value))
-    if not os.path.exists(path):
-        return HttpResponse("找不到该数据集！！！")
-    img_list = os.listdir(path)
-    img = []
-    for i in range(24):
-        idx = random.randint(0,len(img_list)-1)
-        img_path = os.path.join(path, img_list[idx])
-        img.append(img_path)
-
-    img_out = cv2.imread(img[0])
-    img_out = cv2.resize(img_out, (120, 150))
-    for i in range(0, 5):
-        if i != 0:
-            img_a = cv2.imread(img[i * 5])
-            img_a = cv2.resize(img_a, (120, 150))
-        for j in range(1, 5):
-
-            img_tmp = cv2.imread(img[(i - 1) * 5 + j])
-            img_tmp = cv2.resize(img_tmp, (120, 150))
-
-            # 横向
-            if i == 0:
-                img_out = np.concatenate((img_out, img_tmp), axis=1)
+    thumb_path = os.path.join(settings.STATIC_ROOT, 'dataset/{}/thumb.png'.format(value))
+    if os.path.exists(thumb_path):
+        with open(thumb_path,'rb') as f:
+            image_code = base64.b64encode(f.read()).decode()
+    else:
+        path = os.path.join(settings.STATIC_ROOT, 'dataset/{}/img'.format(value))
+        if not os.path.exists(path):
+            return HttpResponse("找不到该数据集！！！")
+        img_list = os.listdir(path)
+        img = []
+        count = 0
+        while True:
+            if count < 25:
+                idx = random.randint(0, len(img_list) - 1)
+                img_path = os.path.join(path, img_list[idx])
+                if '.jpg' not in img_path and '.png' not in img_path:
+                    continue
+                try:
+                    image = cv2.imread(img_path)
+                    image.shape
+                except:
+                    continue
+                count += 1
+                img.append(img_path)
             else:
-                img_a = np.concatenate((img_a, img_tmp), axis=1)
+                break
 
-        # 纵向
-        if i != 0:
-            img_out = np.concatenate((img_out, img_a))
-    image = cv2.imencode('.jpg', img_out)[1]
-    image_code = str(base64.b64encode(image))[2:-1]
+        img_out = cv2.imread(img[0])
+        img_out = cv2.resize(img_out, (120, 150))
+        for i in range(0, 5):
+            if i != 0:
+                img_a = cv2.imread(img[i * 5])
+                img_a = cv2.resize(img_a, (120, 150))
+            for j in range(1, 5):
+
+                img_tmp = cv2.imread(img[(i - 1) * 5 + j])
+                img_tmp = cv2.resize(img_tmp, (120, 150))
+
+                # 横向
+                if i == 0:
+                    img_out = np.concatenate((img_out, img_tmp), axis=1)
+                else:
+                    img_a = np.concatenate((img_a, img_tmp), axis=1)
+
+            # 纵向
+            if i != 0:
+                img_out = np.concatenate((img_out, img_a))
+        cv2.imwrite(os.path.join(settings.STATIC_ROOT, 'dataset/{}/{}'.format(value,'thumb.png')), img_out)
+        image = cv2.imencode('.jpg', img_out)[1]
+        image_code = str(base64.b64encode(image))[2:-1]
     base64_img = 'data:image/png;base64,' + image_code
     return HttpResponse(base64_img)
 
