@@ -116,6 +116,8 @@ def dataset_img(request):
     with open(path, 'r') as f:
         info = f.read().split('\n')
         for i in info:
+            if not i:
+                continue
             item = eval(i)
             data.append({"name": item['name'],
                          "assignee": item["assignee"],

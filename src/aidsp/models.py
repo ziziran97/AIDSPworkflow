@@ -105,7 +105,7 @@ class Dataset(models.Model):
                                 related_name='project_dataset',
                                 verbose_name='所属项目',
                                 on_delete=models.DO_NOTHING, blank=True, null=True)
-    name = models.CharField(max_length=20, verbose_name='数据集名称')
+    name = models.CharField(max_length=50, verbose_name='数据集名称')
     describe = models.CharField(max_length=200, verbose_name='数据集描述', blank=True, null=True)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     update_time = models.DateTimeField(verbose_name='更新时间', auto_now=True)
@@ -402,7 +402,7 @@ class Img(models.Model):
 class ImgBase(models.Model):
     id = models.AutoField(primary_key=True)
     img_name = models.CharField(max_length=100, verbose_name='图片名称')
-    dataset = models.CharField(max_length=20, verbose_name='所属数据集名称')
+    dataset = models.CharField(max_length=50, verbose_name='所属数据集名称')
     img_path = models.CharField(max_length=200, verbose_name='图片路径')
     img_info = models.TextField(verbose_name='标注信息')
     assignee = models.CharField(max_length=10, blank=True, null=True, verbose_name='标注员')

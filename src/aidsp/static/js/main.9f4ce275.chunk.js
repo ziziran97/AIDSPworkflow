@@ -30,13 +30,14 @@
                     uploading: !1,
                     visible: !1,
                     img: "",
+                    imgurl: "",
                     dataset: ""
                 }, a.handleSubmit = function (e) {
                     e.preventDefault(), a.props.form.validateFields((function (e, t) {
                         e || (console.log("Received values of form: ", t), a.state.data.id ? fetch(window.location.protocol + "//" + window.location.host + "/aidsp/api/dataset/" + a.state.data.id + "/", {
                             method: "PUT",
                             headers: {"Content-Type": "application/x-www-form-urlencoded"},
-                            body: "name=" + t.name.replace(/&/g, "%26") + "&project=" + t.project_id + (t.describe ? "&describe=" + t.describe.replace(/&/g, "%26") : "") + (t.quantity_detials ? "&quantity_detials=" + t.quantity_detials.replace(/&/g, "%26") : "") + (a.state.imageUrl ? "&img=" + a.state.imageUrl.replace(/&/g, "%26") : "") + (t.path ? "&path=" + t.path.replace(/&/g, "%26") : "")
+                            body: "name=" + t.name.replace(/&/g, "%26") + "&project=" + t.project_id + (t.describe ? "&describe=" + t.describe.replace(/&/g, "%26") : "") + (t.quantity_detials ? "&quantity_detials=" + t.quantity_detials.replace(/&/g, "%26") : "") + "&img=" + a.state.imgurl.replace(/&/g, "%26") + (t.path ? "&path=" + t.path.replace(/&/g, "%26") : "")
                         }).then((function (e) {
                             var t = window.location.pathname.split("/")[window.location.pathname.split("/").length - 2];
                             if (201 != e.status && 200 != e.status) return e.text();
@@ -50,7 +51,7 @@
                         })) : fetch(window.location.protocol + "//" + window.location.host + "/aidsp/api/dataset/", {
                             method: "POST",
                             headers: {"Content-Type": "application/x-www-form-urlencoded"},
-                            body: "name=" + t.name.replace(/&/g, "%26") + "&project=" + t.project_id + (t.describe ? "&describe=" + t.describe.replace(/&/g, "%26") : "") + (t.quantity_detials ? "&quantity_detials=" + t.quantity_detials.replace(/&/g, "%26") : "") + (a.state.imageUrl ? "&img=" + a.state.imageUrl.replace(/&/g, "%26") : "") + (a.state.fileList[0] ? "&path=" + a.state.fileList[0].name.replace(/&/g, "%26") : "")
+                            body: "name=" + t.name.replace(/&/g, "%26") + "&project=" + t.project_id + (t.describe ? "&describe=" + t.describe.replace(/&/g, "%26") : "") + (t.quantity_detials ? "&quantity_detials=" + t.quantity_detials.replace(/&/g, "%26") : "") + "&img=" + a.state.imgurl.replace(/&/g, "%26") + (a.state.fileList[0] ? "&path=" + a.state.fileList[0].name.replace(/&/g, "%26") : "")
                         }).then((function (e) {
                             201 == e.status || 200 == e.status ? h.a.success({
                                 content: "\u63d0\u4ea4\u6210\u529f",
@@ -76,28 +77,25 @@
                             })
                         }))
                     }))
-                },
-                    a.showModal = function(t) {
+                }, a.showModal = function(t) {
                    a.setState({visible:! 0}),
                    a.state.dataset = t, E()({
                     url: window.location.protocol + "//" + window.location.host + "/aidsp/dataset/imgthum/?value=" + "".concat(t),
                     method: "get"
                 }).then((function (t) {
-                    a.state.img = t
+                    a.state.img = t,
+                    a.setState({visible: !0})
                 }))},
                     a.handleCancel = function() {
-                   a.setState({visible: !0})
+                   a.setState({visible: 0});
+                   a.state.imgurl = a.state.img;
+                   a.state.img= "";
                 },
                     a.handleOk = function() {
-                   a.setState({visible: 0}),
-                   a.state.img= ""
-                },
-                    a.normFile = function (e) {
-                    return console.log("Upload event:", e), Array.isArray(e) ? e : e && e.fileList
-                }, a.handleChange = function (e) {
-                    "uploading" !== e.file.status ? "done" === e.file.status && O(e.file.originFileObj, (function (e) {
-                        return a.setState({imageUrl: e, loading: !1})
-                    })) : a.setState({loading: !0})
+                   a.setState({visible: 0});
+                   a.state.imgurl = a.state.img;
+                   a.state.img= "";
+
                 },
 
                     a.handleUpload = function () {
@@ -108,7 +106,7 @@
                     processData: !1,
                     data: n,
                     success: function () {
-                        a.setState({fileZip: t, uploading: !1}), h.a.success({content:"upload successfully."})
+                        a.setState({fileZip: t, uploading: !1}), h.a.success({content:"upload successfully.", onOk(){history.go(0)}});
                     },
                     error: function () {
                         a.setState({uploading: !1}), h.a.error({content:"upload failed."})
@@ -138,25 +136,7 @@
                             return d.a.createElement(j, {value: e.name}, e.name)
                         }));
                         a.setState({datapath: t}), console.log(t)
-                    })),
-                        E()({
-                            url: window.location.protocol + "//" + window.location.host + "/aidsp/api/dataset/" + t + "/?format=json",
-                            method: "get"
-                        }).then((function (e) {
-                            a.setState({data: e}), a.setState({imageUrl: e.img}), a.props.form.setFieldsValue(e), e.path && a.setState({
-                                fileList: [{
-                                    uid: 1,
-                                    name: e.path,
-                                    url: window.location.protocol + "//" + window.location.host + "/aidsp/dataset/filedownload/" + e.path,
-                                    status: "done"
-                                }]
-                            })
-                        }))
-                }, a.uploadOnchange = function (e) {
-                    var t = Object(n.a)(e.fileList);
-                    (t = (t = t.slice(-2)).map((function (e) {
-                        return e.response && (e.url = e.response.url), e
-                    })))[0] && "done" == t[0].status && (t[0].name = t[0].response, t[0].url = window.location.protocol + "//" + window.location.host + "/aidsp/dataset/filedownload/" + t[0].response), a.setState({fileList: t})
+                    }))
                 }, a.showpreview = function (e) {
                     console.log(e)
                 }, a
@@ -213,25 +193,9 @@
                             return t.props.children.toLowerCase().indexOf(e.toLowerCase()) >= 0
                         }
                     }, this.state.Options))), d.a.createElement(h.a, {title: "图片预览", width: 650,
-                    visible: this.state.visible, onCancel: this.handleCancel, onOk: this.handleOk, okText:"确认", cancelText:"刷新"}, d.a.createElement("img", {src: this.state.img}))
-                        ,d.a.createElement(w.a.Item, {label: "\u6570\u636e\u96c6\u63cf\u8ff0"}, e("describe", {})(d.a.createElement(g.a, {placeholder: "\u8bf7\u8f93\u5165\u6570\u636e\u96c6\u63cf\u8ff0"}))), d.a.createElement(w.a.Item, {label: "\u6570\u91cf\u8be6\u60c5"}, e("quantity_detials", {})(d.a.createElement(g.a, {placeholder: "\u8bf7\u8f93\u5165\u6570\u91cf\u8be6\u60c5"}))), d.a.createElement(w.a.Item, {label: "\u5b58\u50a8\u8def\u5f84"}, e("path", {})(d.a.createElement(g.a, {placeholder: "\u8bf7\u8f93\u5165\u5b58\u50a8\u8def\u5f84"}))), d.a.createElement(w.a.Item, {label: "\u7565\u7f29\u56fe"}, e("xx", {})(d.a.createElement(b.a, {
-                        name: "avatar",
-                        listType: "picture-card",
-                        showUploadList: !1,
-                        onChange: this.handleChange
-                    }, i ? d.a.createElement("img", {
-                        src: i,
-                        alt: "avatar",
-                        style: {width: "100%"}
-                    }) : o)), d.a.createElement(h.a, {
-                        visible: a,
-                        footer: null,
-                        onCancel: this.handleCancel
-                    }, d.a.createElement("img", {
-                        alt: "example",
-                        style: {width: "100%"},
-                        src: nn
-                    }))), d.a.createElement(w.a.Item, {
+                    visible: this.state.visible, onCancel: this.handleCancel, onOk: this.handleOk, okText:"确定", cancelText:"取消", destroyOnClose: true}, d.a.createElement("img", {src: this.state.img}))
+                        ,d.a.createElement(w.a.Item, {label: "\u6570\u636e\u96c6\u63cf\u8ff0"}, e("describe", {})(d.a.createElement(g.a, {placeholder: "\u8bf7\u8f93\u5165\u6570\u636e\u96c6\u63cf\u8ff0"}))), d.a.createElement(w.a.Item, {label: "\u6570\u91cf\u8be6\u60c5"}, e("quantity_detials", {})(d.a.createElement(g.a, {placeholder: "\u8bf7\u8f93\u5165\u6570\u91cf\u8be6\u60c5"})))
+                        ,d.a.createElement(w.a.Item, {
                         wrapperCol: {
                             span: 12,
                             offset: 6
