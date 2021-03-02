@@ -806,7 +806,7 @@ class PicScreen_2 extends React.Component {
   };
   render() {
     var settings = {
-      lazyLoad: true,
+      // lazyLoad: true,
       dots: false,
       speed: 0,
       slidesToShow: 1,

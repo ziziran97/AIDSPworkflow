@@ -67,9 +67,11 @@ def dataset_fileupload(request):
     上传zip文件
     """
     path = request.GET.get("index",'')
-    print(path,"==")
     if path:
-        filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/dataset')
+        if path == '1':
+            filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/dataset')
+        if path == 'duibi':
+            filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/duibi')
     else:
         filedir = os.path.join(os.path.dirname(settings.BASE_DIR), 'aidsp/static/imgFile')
     filename = str(request.FILES['file'])
@@ -91,7 +93,11 @@ def dataset_fileupload(request):
     return HttpResponse(filename)
 
 def dataset_path(request):
-    path = os.path.join(settings.STATIC_ROOT, 'dataset')
+    index = request.GET.get("index", '')
+    if index:
+        path = os.path.join(settings.STATIC_ROOT, 'duibi')
+    else:
+        path = os.path.join(settings.STATIC_ROOT, 'dataset')
     data = []
     count = 0
     for i in os.listdir(path):
@@ -122,7 +128,8 @@ def dataset_img(request):
             data.append({"name": item['name'],
                          "assignee": item["assignee"],
                          "reviewer": item["reviewer"],
-                         "info": item["info"]
+                         "size": item["size"],
+                         "info": str(item["info"]),
                          })
 
     return HttpResponse(json.dumps(data))
@@ -196,11 +203,11 @@ def dataset_filedownload(request, filename=None):
     return response
 
 def ddaabb(request):
-    data = ImgBase.objects.all().values()
-    # for i in data:
-    #     print(i)
+    data = ImgBase.objects.all()
+    for i in data:
+        i.delete()
     # print(data)
-    return HttpResponse(data)
+    return HttpResponse('成功')
 
 def aidspRedirect(request):
     return HttpResponseRedirect('personal')

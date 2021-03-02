@@ -85,7 +85,7 @@ class ImgBaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ImgBase
-        fields = ['id', 'img_name', 'dataset', 'img_path', 'img_info', 'assignee', 'reviewer', 'create_time', 'update_time']
+        fields = ['id', 'img_name', 'dataset', 'img_path', 'size', 'img_info', 'assignee', 'reviewer', 'create_time', 'update_time']
 
 class DatasetDetailSerializer(DatasetSerializer):
     project = None

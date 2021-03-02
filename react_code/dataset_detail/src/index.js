@@ -132,21 +132,22 @@ class Demo extends React.Component {
                   ? "&path=" + this.state.fileList[0].name.replace(/&/g, "%26")
                   : "")
             }
-          ).then((res) => {
-            if (res.status == 201 || res.status == 200) {
-              Modal.success({
-                content: "提交成功",
-                onOk() {
-                  window.location.href = "/aidsp/dataset";
-                }
-              });
-            } else {
-              Modal.error({
-                title: "错误" + res.status,
-                content: "提交失败"
-              });
-            }
-          });
+          );
+          //     .then((res) => {
+          //   if (res.status == 201 || res.status == 200) {
+          //     Modal.success({
+          //       content: "提交成功",
+          //       onOk() {
+          //         window.location.href = "/aidsp/dataset";
+          //       }
+          //     });
+          //   } else {
+          //     Modal.error({
+          //       title: "错误" + res.status,
+          //       content: "提交失败"
+          //     });
+          //   }
+          // });
           this.showDataset(this.state.dataset);
         }
       }
@@ -154,7 +155,7 @@ class Demo extends React.Component {
   };
 
   showDataset = (name)=>{
-    console.log(name)
+    console.log(name);
     reqwest({
       url:
         window.location.protocol +
@@ -164,7 +165,19 @@ class Demo extends React.Component {
         method: "get"
     }).then((data) => {
       data = JSON.parse(data);
+      var info_list = [];
       data.map((station) => (
+          info_list.push(
+              JSON.stringify({
+                  "img_name": station.name,
+                  "dataset": name,
+                  "img_path": "aidsp/static/dataset/" + name,
+                  "img_info": station.info,
+                  "size": station.size,
+                  "assignee": station.assignee,
+                  "reviewer": station.reviewer,
+                }
+          ))),
           fetch(
               window.location.protocol +
               "//" +
@@ -175,18 +188,10 @@ class Demo extends React.Component {
                 headers:{
                   "Content-Type": "application/x-www-form-urlencode"
                 },
-                body: JSON.stringify({
-                  "img_name": station.name,
-                  "dataset": name,
-                  "img_path": "aidsp/static/dataset/" + name,
-                  "img_info": station.info,
-                  "assignee": station.assignee,
-                  "reviewer": station.reviewer,
-                })
+                body: info_list,
               }
           )
-      ))
-
+      )
     })
 
   };
@@ -205,44 +210,26 @@ class Demo extends React.Component {
         method: "get"
     }).then((data) => {
       this.state.img = data
-    })
-
+    });
+    this.setState({
+      visible: true,
+    });
   };
 
   handleOk = () => {
     this.setState({
       visible: false,
     });
+    this.state.imgurl = this.state.img;
+    this.state.img= "";
   };
 
   handleCancel = () => {
     this.setState({
       visible: false,
     });
-  };
-
-  normFile = (e) => {
-    console.log("Upload event:", e);
-    if (Array.isArray(e)) {
-      return e;
-    }
-    return e && e.fileList;
-  };
-
-  handleChange = (info) => {
-    if (info.file.status === "uploading") {
-      this.setState({ loading: true });
-      return;
-    }
-    if (info.file.status === "done") {
-      // Get this url from response in real world.
-      getBase64(info.file.originFileObj, (imageUrl) =>
-        this.setState({
-          imageUrl,
-          loading: false
-        })
-      );
-    }
+    this.state.imgurl = this.state.img;
+    this.state.img= "";
   };
 
   handleUpload = () => {
@@ -266,7 +253,7 @@ class Demo extends React.Component {
           fileZip,
           uploading: false,
         });
-        Modal.success('upload successfully.');
+        Modal.success({content:'upload successfully.', onOk(){history.go(0)}});
       },
       error: () => {
         this.setState({
@@ -322,65 +309,7 @@ class Demo extends React.Component {
       this.setState({datapath: Options });
       console.log(Options)
     });
-    reqwest({
-      url:
-        window.location.protocol +
-        "//" +
-        window.location.host +
-        "/aidsp/api/dataset/" +
-        pid +
-        "/?format=json",
-      method: "get"
-    }).then((data) => {
-      this.setState({ data: data });
-      this.setState({ imageUrl: data.img });
-      this.props.form.setFieldsValue(data);
-      if (data.path) {
-        this.setState({
-          fileList: [
-            {
-              uid: 1,
-              name: data.path,
-              url:
-                window.location.protocol +
-                "//" +
-                window.location.host +
-                "/aidsp/dataset/filedownload/" +
-                data.path,
-              status: "done"
-            }
-          ]
-        });
-      }
-    });
-  };
 
-  uploadOnchange = (info) => {
-    let fileList = [...info.fileList];
-
-    // 1. Limit the number of uploaded files
-    // Only to show two recent uploaded files, and old ones will be replaced by the new
-    fileList = fileList.slice(-2);
-
-    // 2. Read from response and show file link
-    fileList = fileList.map((file) => {
-      if (file.response) {
-        // Component will show file.url as link
-        file.url = file.response.url;
-      }
-      return file;
-    });
-    if (fileList[0] && fileList[0].status == "done") {
-      fileList[0].name = fileList[0].response;
-      fileList[0].url =
-        window.location.protocol +
-        "//" +
-        window.location.host +
-        "/aidsp/dataset/filedownload/" +
-        fileList[0].response;
-    }
-
-    this.setState({ fileList });
   };
   showpreview = (e) => {
     console.log(e);
@@ -447,8 +376,11 @@ class Demo extends React.Component {
           visible={this.state.visible}
           onOk={this.handleOk}
           onCancel={this.handleCancel}
+          okText="确认"
+          cancelText="取消"
+          destroyOnClose= {true}
         >
-          <p>a</p>
+          <img src={this.state.img}/>
         </Modal>
         <Form.Item label="项目">
           {getFieldDecorator("project_id", {
@@ -480,39 +412,6 @@ class Demo extends React.Component {
             {}
           )(<Input placeholder="请输入数量详情"></Input>)}
         </Form.Item>
-        <Form.Item label="存储路径">
-          {getFieldDecorator(
-            "path",
-            {}
-          )(<Input placeholder="请输入存储路径"></Input>)}
-        </Form.Item>
-
-        <Form.Item label="略缩图">
-          {getFieldDecorator(
-            "xx",
-            {}
-          )(
-            <Upload
-              name="avatar"
-              listType="picture-card"
-              showUploadList={false}
-              onChange={this.handleChange}
-            >
-              {imageUrl ? (
-                <img src={imageUrl} alt="avatar" style={{ width: "100%" }} />
-              ) : (
-                uploadButton
-              )}
-            </Upload>
-          )}
-          <Modal
-            visible={previewVisible}
-            footer={null}
-            onCancel={this.handleCancel}
-          >
-            <img alt="example" style={{ width: "100%" }} src={previewImage} />
-          </Modal>
-        </Form.Item>
 
         <Form.Item wrapperCol={{ span: 12, offset: 6 }}>
           <Button type="primary" htmlType="submit">
@@ -526,15 +425,17 @@ class Demo extends React.Component {
             <Icon type="upload" /> 上传zip
           </Button>
         </Upload>
-        <Button
-          type="primary"
-          onClick={this.handleUpload}
-          disabled={fileZip.length === 0}
-          loading={uploading}
-          style={{ marginTop: 16 }}
-        >
-          {uploading ? 'Uploading' : 'Start Upload' }
-        </Button>
+        <Form.Item label="文件上传">
+          <Button
+            type="primary"
+            onClick={this.handleUpload}
+            disabled={fileZip.length === 0}
+            loading={uploading}
+            style={{ marginTop: 16 }}
+          >
+            {uploading ? 'Uploading' : 'Start Upload' }
+          </Button>
+        </Form.Item>
       </div>
       </Form>
     );

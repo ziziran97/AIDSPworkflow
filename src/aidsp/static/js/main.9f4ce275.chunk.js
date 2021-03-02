@@ -52,31 +52,51 @@
                             method: "POST",
                             headers: {"Content-Type": "application/x-www-form-urlencoded"},
                             body: "name=" + t.name.replace(/&/g, "%26") + "&project=" + t.project_id + (t.describe ? "&describe=" + t.describe.replace(/&/g, "%26") : "") + (t.quantity_detials ? "&quantity_detials=" + t.quantity_detials.replace(/&/g, "%26") : "") + "&img=" + a.state.imgurl.replace(/&/g, "%26") + (a.state.fileList[0] ? "&path=" + a.state.fileList[0].name.replace(/&/g, "%26") : "")
-                        }).then((function (e) {
-                            201 == e.status || 200 == e.status ? h.a.success({
-                                content: "\u63d0\u4ea4\u6210\u529f",
-                                onOk: function () {
-                                    window.location.href = "/aidsp/dataset"
-                                }
-                            }) : h.a.error({title: "\u9519\u8bef" + e.status, content: "\u63d0\u4ea4\u5931\u8d25"})
-                        }))), a.showDataset(a.state.dataset)
+                        })
+                        //         .then((function (e) {
+                        //     201 == e.status || 200 == e.status ? h.a.success({
+                        //         content: "\u63d0\u4ea4\u6210\u529f",
+                        //         onOk: function () {
+                        //             window.location.href = "/aidsp/dataset"
+                        //         }
+                        //     }) : h.a.error({title: "\u9519\u8bef" + e.status, content: "\u63d0\u4ea4\u5931\u8d25"})
+                        // }))
+                        ), a.showDataset(a.state.dataset)
                     }))
                 },
                     a.showDataset = function (e) { console.log(e);E()({
                     url: window.location.protocol + "//" + window.location.host + "/aidsp/dataset/imglist/?name=" + e,
                     method: "get"
                     }).then((function (t) {
-                    (t = JSON.parse(t)).map((function (t) {
+                    var info_list = [];
+                    (t = JSON.parse(t)).map(
+                        (function (t) {
+                            info_list.push(
+                                JSON.stringify({
+                                "img_name": t.name, "dataset": e, "img_path": "aidsp/static/dataset/" + e, "size": t.size, "img_info": t.info,
+                                "assignee": t.assignee, "reviewer": t.reviewer,
+                            })
+                            )
+
+                        })
+                    );
+                        console.log(info_list);
+                        !function () {
                         return fetch(window.location.protocol + "//" + window.location.host + "/aidsp/api/imgbase/", {
                             method: "POST",
                             headers: {"Content-Type": "application/json"},
-                            body: JSON.stringify({
-                                "img_name": t.name, "dataset": e, "img_path": "aidsp/static/dataset/" + e, "img_info": t.info,
-                                "assignee": t.assignee, "reviewer": t.reviewer,
-                            })
-                            })
+                            body: JSON.stringify(info_list),
+                            }).then((function (e) {
+                            201 == e.status || 200 == e.status ? h.a.success({
+                                content: "\u63d0\u4ea4\u6210\u529f",
+                                onOk: function () {
+                                    window.location.href = "/aidsp/dataset"
+                                }
+                            }) : h.a.error({title: "\u9519\u8bef" + e.status, content: "\u63d0\u4ea4\u5931\u8d25"})
                         }))
-                    }))
+                        }()
+                    }
+                    ))
                 }, a.showModal = function(t) {
                    a.setState({visible:! 0}),
                    a.state.dataset = t, E()({

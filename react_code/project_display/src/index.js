@@ -328,6 +328,7 @@ const CollectionCreateForm = Form.create({ name: "form_in_modal" })(
                   <Select placeholder="请选择任务类型">
                     <Option value="screen">筛选任务</Option>
                     <Option value="tagging">标注任务</Option>
+                    <Option value="tagging">对比任务</Option>
                   </Select>
                 )}
               </Form.Item>
@@ -736,9 +737,11 @@ class Demo extends React.Component {
         reqId: data.requirement_documents,
         colId: data.collection_documents,
         labId: data.labeling_documents,
+        duibiId: data.duibi_documents,
         req_qa: data.req_qa,
         col_qa: data.col_qa,
         lab_qa: data.lab_qa,
+        duibi_qa: data.duibi_qa,
         comments: xqa,
         quantity_week_value: data.quantity_week,
         task_description_value: data.task_description,
@@ -843,6 +846,10 @@ class Demo extends React.Component {
     {
       key: "lab_doc",
       tab: "标注文档"
+    },
+    {
+      key: "duibi_doc",
+      tab: "对比文档"
     }
   ];
   // 解答、编辑切换为废弃方案
@@ -1637,7 +1644,7 @@ class Demo extends React.Component {
         };
 
         var socket = new WebSocket(
-          "wss:" + window.location.host + "/aidsp/sktasksupload"
+          "ws:" + window.location.host + "/aidsp/sktasksupload"
         );
         socket.onopen = function () {
           socket.send(JSON.stringify(data));
@@ -2268,6 +2275,8 @@ class Demo extends React.Component {
                 >
                   批量分配任务
                 </Button>
+
+
                 <Button
                   type="primary"
                   onClick={this.uploadshowTaskMoadl}

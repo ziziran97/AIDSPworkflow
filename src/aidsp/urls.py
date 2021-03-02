@@ -5,7 +5,7 @@ from .views import project_index, project_detail, project_display, dataset_displ
     dataset_fileupload, dataset_filedownload, aidspRedirect, taskPost, taskGet, tasksChange, personalTasksGet,\
     extraProjectPost, getImg, postImg, finishImg, showFileList, tasksUpload, pic_screen, taskCopy, getImgTask, \
     workloadRm, mdView, mdList, percentage_workload, picRight, socket_tasksupload, task_standard_post, dataset_path,\
-    img_thum, dataset_img, ddaabb
+    img_thum, dataset_img,ddaabb
 from .apis import ProjectViewSet, UserViewSet, LabelViewSet, QAViewSet, ProjectdisplayViewSet, ReplyViewSet, \
     DatasetViewSet, TaskViewSet, WorkloadViewSet, ImgBaseViewSet
 from rest_framework.routers import DefaultRouter

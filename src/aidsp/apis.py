@@ -403,11 +403,13 @@ class ImgBaseViewSet(viewsets.ModelViewSet):
         _mutable = data._mutable
         # 设置_mutable为True
         data._mutable = True
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        for info in request.data:
+            info = eval(info)
+            serializer = self.get_serializer(data=info)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            # headers = self.get_success_headers(serializer.data)
+        return Response(status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)

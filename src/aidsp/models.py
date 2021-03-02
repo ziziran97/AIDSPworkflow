@@ -398,12 +398,12 @@ class Img(models.Model):
         verbose_name = verbose_name_plural = '图片库'
 
 
-
 class ImgBase(models.Model):
     id = models.AutoField(primary_key=True)
     img_name = models.CharField(max_length=100, verbose_name='图片名称')
     dataset = models.CharField(max_length=50, verbose_name='所属数据集名称')
     img_path = models.CharField(max_length=200, verbose_name='图片路径')
+    size = models.CharField(max_length=15, verbose_name='图片尺寸')
     img_info = models.TextField(verbose_name='标注信息')
     assignee = models.CharField(max_length=10, blank=True, null=True, verbose_name='标注员')
     reviewer = models.CharField(max_length=10, blank=True, null=True, verbose_name='审核员')
