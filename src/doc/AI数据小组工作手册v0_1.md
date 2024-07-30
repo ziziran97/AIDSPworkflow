@@ -218,7 +218,6 @@ find /target/path/ -name '*.jpg' -exec mv {} /some/path/ \;
 
 ## 5 绩效考核
 
-信任
 
 ## 6.工具使用文档
 
