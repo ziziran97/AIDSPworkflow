@@ -10,5 +10,5 @@ lxml==4.6.3
 selenium==3.141.0
 psycopg2==2.8.5
 dwebsocket==0.5.12
-opencv-python==4.4.0.42
+opencv-python==4.8.1.78
 numpy==1.18.5
